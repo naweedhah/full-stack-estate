@@ -1,16 +1,38 @@
-exports.createInquiry = async (req, res) => {
-  try {
-    const { listingId, type } = req.body;
+let inquiries = [];
 
-    const inquiry = {
-      studentId: req.user.id,
-      listingId,
-      type,
-      status: "pending"
-    };
+exports.createInquiry = (req, res) => {
+  const { postId, ownerId, type } = req.body;
 
-    res.json(inquiry);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const inquiry = {
+    id: Date.now().toString(),
+    studentId: req.user?.id || "student1",
+    ownerId,
+    postId,
+    type,
+    status: "pending",
+    chatId: null
+  };
+
+  inquiries.push(inquiry);
+
+  res.json(inquiry);
+};
+
+
+exports.createInquiry = (req, res) => {
+  const { postId, ownerId, type } = req.body;
+
+  const inquiry = {
+    id: Date.now().toString(),
+    studentId: req.user?.id || "student1",
+    ownerId,
+    postId,
+    type,
+    status: "pending",
+    chatId: null
+  };
+
+  inquiries.push(inquiry);
+
+  res.json(inquiry);
 };

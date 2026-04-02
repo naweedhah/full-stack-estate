@@ -356,6 +356,8 @@ model User {
   complaints                Complaint[]             @relation("ComplaintReporter")
   chats                     Chat[]                  @relation(fields: [chatIDs], references: [id])
   chatIDs                   String[]                @db.ObjectId
+  inquiriesSent             Inquiry[]               @relation("StudentInquiry")
+  inquiriesReceived         Inquiry[]               @relation("OwnerInquiry")
 }
 
 model Chat {
@@ -374,5 +376,29 @@ model Message {
   userId    String
   chat      Chat     @relation(fields: [chatId], references: [id])
   chatId    String   @db.ObjectId
+
+  scamFlag  String   @default("safe")  
+
   createdAt DateTime @default(now())
 }
+
+model Inquiry {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  student    User     @relation("StudentInquiry", fields: [studentId], references: [id])
+  studentId  String   @db.ObjectId
+  owner      User     @relation("OwnerInquiry", fields: [ownerId], references: [id])
+  ownerId    String   @db.ObjectId
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     String   @db.ObjectId
+
+  type       String   // "view" or "book"
+  status     String   @default("pending")
+
+  chat       Chat?    @relation(fields: [chatId], references: [id])
+  chatId     String?  @db.ObjectId
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+
