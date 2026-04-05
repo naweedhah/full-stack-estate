@@ -9,11 +9,21 @@ export const SocketContextProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    setSocket(io("http://localhost:4000"));
+    const nextSocket = io("http://localhost:8800", {
+      withCredentials: true,
+    });
+
+    setSocket(nextSocket);
+
+    return () => {
+      nextSocket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
-  currentUser && socket?.emit("newUser", currentUser.id);
+    if (currentUser?.id && socket) {
+      socket.emit("newUser", currentUser.id);
+    }
   }, [currentUser, socket]);
 
   return (

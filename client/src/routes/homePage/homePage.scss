@@ -15,15 +15,15 @@
       gap: 50px;
       height: 100%;
 
-      @include lg{
+      @include lg {
         padding-right: 50px;
       }
 
-      @include md{
+      @include md {
         padding: 0;
       }
 
-      @include sm{
+      @include sm {
         justify-content: flex-start;
       }
 
@@ -73,10 +73,11 @@
     img {
       width: 115%;
       position: absolute;
-      right: 0;
+      right: -50px;
 
       @include lg {
         width: 105%;
+        right: -40px;
       }
     }
   }

@@ -76,6 +76,28 @@
     gap: 18px;
   }
 
+  .feedbackRow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .successText,
+  .errorText {
+    background-color: white;
+    border-radius: 16px;
+    padding: 14px 18px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .successText {
+    color: #1c7c54;
+  }
+
+  .errorText {
+    color: #c1121f;
+  }
+
   .sectionHeading {
     display: flex;
     align-items: flex-start;
@@ -121,5 +143,101 @@
       border-radius: 14px;
       font-weight: 600;
     }
+  }
+
+  .settingsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+
+    @include md {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .settingsPanel {
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 14px 30px rgba(22, 22, 22, 0.05);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .alertForm {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+
+    @include sm {
+      grid-template-columns: 1fr;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    input,
+    select {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    button {
+      border: none;
+      background-color: #fece51;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+
+  .checkboxLabel {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 10px !important;
+  }
+
+  .savedAlertsList,
+  .preferenceList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .savedAlertItem,
+  .preferenceItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #fcf5f3;
+
+    span {
+      color: #605853;
+      line-height: 1.5;
+    }
+
+    button {
+      border: none;
+      background-color: white;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+
+  .emptyText {
+    color: #605853;
+    line-height: 1.6;
   }
 }

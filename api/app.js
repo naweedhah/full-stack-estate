@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoute from "./src/features/auth/auth.route.js";
@@ -11,9 +12,11 @@ import messageRoute from "./src/features/messages/message.route.js";
 import inquiryRoute from "./src/features/inquiry/inquiry.route.js";
 import reportRoute from "./src/features/report/report.route.js";
 import sakithChatRoute from "./src/features/sakithChat/sakithChat.route.js";
+import { initSocketServer } from "./src/shared/lib/socket.js";
 
 const app = express();
 const port = process.env.PORT || 8800;
+const server = http.createServer(app);
 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
@@ -29,7 +32,8 @@ app.use("/api/inquiry", inquiryRoute);
 app.use("/api/report", reportRoute);
 app.use("/api/sakith-chat", sakithChatRoute);
 
+initSocketServer(server, process.env.CLIENT_URL);
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on port ${port}!`);
 });

@@ -3,11 +3,13 @@ import "./navbar.scss";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotificationStore } from "../../lib/notificationStore";
+import { SocketContext } from "../../context/SocketContext";
 
 function Navbar() {
   const [open, setOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const { currentUser } = useContext(AuthContext);
+  const { socket } = useContext(SocketContext);
   const navigate = useNavigate();
   const alertsRef = useRef(null);
 
@@ -15,6 +17,9 @@ function Navbar() {
   const number = useNotificationStore((state) => state.number);
   const notifications = useNotificationStore((state) => state.notifications);
   const markRead = useNotificationStore((state) => state.markRead);
+  const markAllRead = useNotificationStore((state) => state.markAllRead);
+  const pushLive = useNotificationStore((state) => state.pushLive);
+  const applyReadEvent = useNotificationStore((state) => state.applyReadEvent);
 
   useEffect(() => {
     if (currentUser) {
@@ -23,6 +28,26 @@ function Navbar() {
       });
     }
   }, [currentUser, fetch]);
+
+  useEffect(() => {
+    if (!socket || !currentUser) return undefined;
+
+    const handleNewNotification = (notification) => {
+      pushLive(notification);
+    };
+
+    const handleReadNotification = ({ notificationId }) => {
+      applyReadEvent(notificationId);
+    };
+
+    socket.on("notification:new", handleNewNotification);
+    socket.on("notification:read", handleReadNotification);
+
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+      socket.off("notification:read", handleReadNotification);
+    };
+  }, [socket, currentUser, pushLive, applyReadEvent]);
 
   const navLinks = useMemo(
     () => [
@@ -56,6 +81,14 @@ function Navbar() {
     }
     setAlertsOpen(false);
     navigate("/profile#notifications");
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllRead();
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -122,7 +155,14 @@ function Navbar() {
                 <div className="alertsDropdown">
                   <div className="alertsHeader">
                     <strong>Notifications</strong>
-                    <span>{number} unseen</span>
+                    <div className="alertsMeta">
+                      <span>{number} unseen</span>
+                      {number > 0 && (
+                        <button type="button" onClick={handleMarkAllRead}>
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {notifications.length > 0 ? (
                     <div className="alertsList">
@@ -133,6 +173,7 @@ function Navbar() {
                           className={`alertItem ${item.isRead ? "read" : "unread"}`}
                           onClick={() => handleNotificationClick(item.id)}
                         >
+                          <small>{item.type}</small>
                           <strong>{item.title}</strong>
                           <span>{item.message}</span>
                         </button>

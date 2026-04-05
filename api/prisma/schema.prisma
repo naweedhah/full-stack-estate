@@ -71,11 +71,21 @@ enum NotificationType {
   roommateMatchFound
   reportSubmitted
   complaintSubmitted
+  searchMatch
+  demandSpike
+  priceDrop
+  inquiryReply
+  smartReminder
+  suspiciousChatActivity
+  safetyAlert
+  lowAvailability
 }
 
 enum NotificationChannel {
   email
   inApp
+  sms
+  push
 }
 
 enum ReportStatus {
@@ -123,6 +133,7 @@ model Post {
   bookingRequests       BookingRequest[]
   watchlists            Watchlist[]
   reports               Report[]
+  inquiries             Inquiry[]
 }
 
 model PostDetail {
@@ -235,9 +246,16 @@ model NotificationPreference {
   userId                String   @unique @db.ObjectId
   emailEnabled          Boolean  @default(true)
   inAppEnabled          Boolean  @default(true)
+  pushEnabled           Boolean  @default(true)
+  smsEnabled            Boolean  @default(false)
   bookingUpdates        Boolean  @default(true)
   watchlistAlerts       Boolean  @default(true)
+  searchAlerts          Boolean  @default(true)
+  priceAlerts           Boolean  @default(true)
+  demandAlerts          Boolean  @default(true)
+  inquiryAlerts         Boolean  @default(true)
   roommateAlerts        Boolean  @default(true)
+  safetyAlerts          Boolean  @default(true)
   moderationAlerts      Boolean  @default(true)
   accountSecurityAlerts Boolean  @default(true)
   createdAt             DateTime @default(now())
@@ -368,6 +386,7 @@ model Chat {
   seenBy      String[]  @db.ObjectId
   messages    Message[]
   lastMessage String?
+  inquiry     Inquiry?
 }
 
 model Message {
@@ -395,10 +414,8 @@ model Inquiry {
   status     String   @default("pending")
 
   chat       Chat?    @relation(fields: [chatId], references: [id])
-  chatId     String?  @db.ObjectId
+  chatId     String?  @unique @db.ObjectId
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
-
-

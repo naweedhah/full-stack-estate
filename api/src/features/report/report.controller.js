@@ -1,51 +1,287 @@
-let reports = [];
+import prisma from "../../shared/lib/prisma.js";
+import {
+  getUserReportSummary,
+  resolveReportedUserId,
+} from "../safety/reputation.service.js";
+import { createNotification } from "../../shared/services/notification.service.js";
 
-// CREATE REPORT
-export const createReport = (req, res) => {
-  const { targetId, reason } = req.body;
+const requireAdmin = (req, res) => {
+  if (req.userRole !== "admin") {
+    res.status(403).json({ message: "Admin access required" });
+    return false;
+  }
 
-  const report = {
-    id: Date.now().toString(),
+  return true;
+};
+
+const reportInclude = {
+  reporter: {
+    select: {
+      id: true,
+      username: true,
+      fullName: true,
+      avatar: true,
+    },
+  },
+  post: {
+    select: {
+      id: true,
+      title: true,
+      address: true,
+    },
+  },
+};
+
+const validTargetTypes = new Set(["user", "boarding", "bookingRequest", "message"]);
+const isProduction = process.env.NODE_ENV === "production";
+
+export const createReport = async (req, res) => {
+  const {
     targetId,
+    targetType = "message",
     reason,
-    status: "pending"
-  };
+    description,
+    postId,
+  } = req.body;
 
-  reports.push(report);
+  if (!targetId || !reason?.trim()) {
+    return res.status(400).json({ message: "Target and reason are required" });
+  }
 
-  res.json(report);
+  if (!validTargetTypes.has(targetType)) {
+    return res.status(400).json({ message: "Invalid report target type" });
+  }
+
+  try {
+    const existingOpenReport = await prisma.report.findFirst({
+      where: {
+        reporterId: req.userId,
+        targetId,
+        targetType,
+        status: {
+          in: ["open", "underReview"],
+        },
+      },
+      include: reportInclude,
+    });
+
+    if (existingOpenReport) {
+      return res.status(200).json({
+        message: "You already reported this item",
+        report: existingOpenReport,
+      });
+    }
+
+    const report = await prisma.report.create({
+      data: {
+        reporterId: req.userId,
+        targetId,
+        targetType,
+        reason: reason.trim(),
+        description: description?.trim() || null,
+        ...(postId ? { postId } : {}),
+      },
+      include: reportInclude,
+    });
+
+    res.status(201).json({
+      message: "Report submitted successfully",
+      report,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to create report" });
+  }
 };
 
-// WARN USER
-export const warnUser = (req, res) => {
-  const { userId } = req.body;
+export const createDevSeedReport = async (req, res) => {
+  if (isProduction) {
+    return res.status(403).json({ message: "Dev seed helpers are disabled in production" });
+  }
 
-  console.log(`⚠️ Warning sent to user: ${userId}`);
+  try {
+    const [targetUser, samplePost] = await Promise.all([
+      prisma.user.findFirst({
+        where: {
+          id: {
+            not: req.userId,
+          },
+        },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+        },
+      }),
+      prisma.post.findFirst({
+        select: {
+          id: true,
+          title: true,
+        },
+      }),
+    ]);
 
-  res.json({
-    message: `Warning issued to user ${userId}`
-  });
+    const seededTarget = targetUser || {
+      id: req.userId,
+      username: "current-user",
+      fullName: "Current User",
+    };
+
+    const report = await prisma.report.create({
+      data: {
+        reporterId: req.userId,
+        targetId: seededTarget.id,
+        targetType: "user",
+        reason: `Seeded moderation test for ${seededTarget.fullName || seededTarget.username}`,
+        description:
+          "This is a development-only report created to test the admin moderation dashboard.",
+        ...(samplePost ? { postId: samplePost.id } : {}),
+      },
+      include: reportInclude,
+    });
+
+    res.status(201).json({
+      message: "Seed report created successfully",
+      report,
+      note: "This helper is for local development only.",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to create seed report" });
+  }
 };
 
-// RESOLVE REPORT
-export const resolveReport = (req, res) => {
+export const getReports = async (req, res) => {
+  try {
+    const reports = await prisma.report.findMany({
+      where: req.userRole === "admin" ? {} : { reporterId: req.userId },
+      include: reportInclude,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const reportsWithContext = await Promise.all(
+      reports.map(async (report) => {
+        const targetUserId = await resolveReportedUserId(report);
+        const reputation = targetUserId
+          ? await getUserReportSummary(targetUserId)
+          : null;
+
+        return {
+          ...report,
+          targetUserId,
+          reputation,
+        };
+      }),
+    );
+
+    res.status(200).json(reportsWithContext);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to load reports" });
+  }
+};
+
+export const warnUser = async (req, res) => {
+  const { reportId } = req.body;
+
+  if (!requireAdmin(req, res)) {
+    return;
+  }
+
+  if (!reportId) {
+    return res.status(400).json({ message: "Report id is required" });
+  }
+
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: reportInclude,
+    });
+
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    const targetUserId = await resolveReportedUserId(report);
+
+    if (!targetUserId) {
+      return res.status(400).json({ message: "Could not determine which user to warn" });
+    }
+
+    await createNotification({
+      userId: targetUserId,
+      type: "safetyAlert",
+      title: "Account warning issued",
+      message: `An admin reviewed a report and issued a warning related to: ${report.reason}.`,
+      metadata: {
+        reportId,
+        targetType: report.targetType,
+        targetId: report.targetId,
+      },
+    });
+
+    const updatedReport = await prisma.report.update({
+      where: { id: reportId },
+      data: {
+        status: "underReview",
+        adminNotes: "Warning sent to the reported user.",
+      },
+      include: reportInclude,
+    });
+
+    res.status(200).json({
+      message: "Warning issued successfully",
+      report: updatedReport,
+      targetUserId,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to warn user" });
+  }
+};
+
+export const resolveReport = async (req, res) => {
   const { id } = req.params;
+  const { status = "resolved", adminNotes } = req.body;
 
-  const report = reports.find(r => r.id === id);
-
-  if (!report) {
-    return res.status(404).json({ message: "Not found" });
+  if (!requireAdmin(req, res)) {
+    return;
   }
 
-  report.status = "resolved";
-
-  if (report.reason.toLowerCase().includes("scam")) {
-    console.log("⚠️ Scam detected → warning user");
-    console.log(`⚠️ Warning sent to owner: ${report.targetId}`);
+  if (!["resolved", "dismissed", "underReview"].includes(status)) {
+    return res.status(400).json({ message: "Invalid report status" });
   }
 
-  res.json({
-    message: "Report resolved and action taken",
-    report
-  });
+  try {
+    const report = await prisma.report.findUnique({
+      where: { id },
+      include: reportInclude,
+    });
+
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    const updatedReport = await prisma.report.update({
+      where: { id },
+      data: {
+        status,
+        adminNotes: adminNotes?.trim() || report.adminNotes,
+        ...(status === "resolved" || status === "dismissed"
+          ? { resolvedAt: new Date() }
+          : {}),
+      },
+      include: reportInclude,
+    });
+
+    res.status(200).json({
+      message: "Report updated successfully",
+      report: updatedReport,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to resolve report" });
+  }
 };

@@ -8,6 +8,7 @@ import { SocketContext } from "../../context/SocketContext";
 function Chat({ chats, initialChatId = null }) {
   const [chat, setChat] = useState(null);
   const [isOpeningChat, setIsOpeningChat] = useState(false);
+  const [isChatDismissed, setIsChatDismissed] = useState(false);
   const { currentUser } = useContext(AuthContext);
   const { socket } = useContext(SocketContext);
 
@@ -18,6 +19,7 @@ function Chat({ chats, initialChatId = null }) {
   }, [chat]);
 
   const handleOpenChat = async (id, receiver) => {
+    setIsChatDismissed(false);
     setIsOpeningChat(true);
     setChat((prev) => ({
       id,
@@ -61,16 +63,23 @@ function Chat({ chats, initialChatId = null }) {
   };
 
   useEffect(() => {
-    if (!initialChatId || !chats?.length || chat?.id === initialChatId) return;
+    if (
+      !initialChatId ||
+      !chats?.length ||
+      chat?.id === initialChatId ||
+      isChatDismissed
+    ) {
+      return;
+    }
 
     const matchedChat = chats.find((item) => item.id === initialChatId);
     if (matchedChat) {
       handleOpenChat(matchedChat.id, matchedChat.receiver);
     }
-  }, [initialChatId, chats, chat?.id]);
+  }, [initialChatId, chats, chat?.id, isChatDismissed]);
 
   useEffect(() => {
-    if (!chats?.length || chat) return;
+    if (!chats?.length || chat || isChatDismissed) return;
 
     if (initialChatId) {
       const matchedChat = chats.find((item) => item.id === initialChatId);
@@ -80,7 +89,7 @@ function Chat({ chats, initialChatId = null }) {
     if (chats.length === 1) {
       handleOpenChat(chats[0].id, chats[0].receiver);
     }
-  }, [chats, chat, initialChatId]);
+  }, [chats, chat, initialChatId, isChatDismissed]);
 
   useEffect(() => {
     const read = async () => {
@@ -136,7 +145,14 @@ function Chat({ chats, initialChatId = null }) {
                   <span>@{chat.receiver.username}</span>
                 </div>
               </div>
-              <button type="button" className="close" onClick={() => setChat(null)}>
+              <button
+                type="button"
+                className="close"
+                onClick={() => {
+                  setIsChatDismissed(true);
+                  setChat(null);
+                }}
+              >
                 Close
               </button>
             </div>

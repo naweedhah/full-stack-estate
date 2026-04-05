@@ -11,17 +11,32 @@ function StudentDashboard({
   currentUser,
   postData,
   chats,
+  initialSearchAlerts,
+  initialPreferences,
   onLogout,
   unreadCount,
   notifications,
   initialChatId,
 }) {
   const [chatCollapsed, setChatCollapsed] = useState(!initialChatId);
+  const [searchAlerts, setSearchAlerts] = useState(initialSearchAlerts || []);
+  const [preferenceMessage, setPreferenceMessage] = useState("");
+  const [preferenceError, setPreferenceError] = useState("");
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
   const savedPosts = postData.savedPosts || [];
   const pendingRequests = 0;
   const confirmedBookings = 0;
   const roommateMatches = 0;
   const watchlistItems = savedPosts.slice(0, 2);
+  const preferences = useNotificationStore((state) => state.preferences);
+  const updatePreferences = useNotificationStore((state) => state.updatePreferences);
+
+  useEffect(() => {
+    if (initialPreferences && !preferences) {
+      useNotificationStore.setState({ preferences: initialPreferences });
+    }
+  }, [initialPreferences, preferences]);
 
   const fallbackNotifications = [
     unreadCount > 0
@@ -54,6 +69,60 @@ function StudentDashboard({
       document.body.classList.remove("dashboard-chat-collapsed");
     };
   }, [chatCollapsed]);
+
+  const handlePreferenceChange = async (event) => {
+    const { name, checked } = event.target;
+
+    try {
+      setIsSavingPreferences(true);
+      setPreferenceError("");
+      await updatePreferences({
+        [name]: checked,
+      });
+      setPreferenceMessage("Notification preferences updated.");
+    } catch (err) {
+      console.log(err);
+      setPreferenceError(
+        err.response?.data?.message || "Failed to update preferences.",
+      );
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
+  const handleDeleteAlert = async (alertId) => {
+    try {
+      setPreferenceError("");
+      await apiRequest.delete(`/users/watchlists/searches/${alertId}`);
+      setSearchAlerts((prev) => prev.filter((item) => item.id !== alertId));
+      setPreferenceMessage("Saved search alert removed.");
+    } catch (err) {
+      console.log(err);
+      setPreferenceError(
+        err.response?.data?.message || "Failed to remove saved alert.",
+      );
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    try {
+      setIsSendingTestEmail(true);
+      setPreferenceError("");
+      const res = await apiRequest.post("/users/notifications/test-email");
+      setPreferenceMessage(res.data.message || "Test email sent.");
+    } catch (err) {
+      console.log(err);
+      const backendMessage =
+        typeof err.response?.data === "string"
+          ? err.response.data
+          : err.response?.data?.message;
+      setPreferenceError(
+        backendMessage || "Failed to send test email.",
+      );
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
 
   return (
     <div className="profilePage">
@@ -199,6 +268,106 @@ function StudentDashboard({
                 roommate suggestions and compatibility scores.
               </p>
             </article>
+
+            <article className="panel smartAlertsPanel">
+              <div className="panelHeading">
+                <div>
+                  <p className="eyebrow">Intelligence</p>
+                  <h3>Smart Alerts</h3>
+                </div>
+                <Link to="/watchlist">Open Watchlist</Link>
+              </div>
+
+              {(preferenceMessage || preferenceError) && (
+                <div className="dashboardFeedback">
+                  {preferenceMessage && (
+                    <p className="dashboardSuccess">{preferenceMessage}</p>
+                  )}
+                  {preferenceError && (
+                    <p className="dashboardError">{preferenceError}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="preferenceSummaryGrid">
+                {[
+                  ["bookingUpdates", "Booking updates"],
+                  ["searchAlerts", "Search alerts"],
+                  ["priceAlerts", "Price drops"],
+                  ["roommateAlerts", "Roommate matches"],
+                ].map(([key, label]) => (
+                  <label className="preferenceToggle" key={key}>
+                    <div>
+                      <strong>{label}</strong>
+                      <span>
+                        {preferences?.[key] ? "Live right now" : "Currently paused"}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      name={key}
+                      checked={Boolean(preferences?.[key])}
+                      onChange={handlePreferenceChange}
+                      disabled={isSavingPreferences}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="savedAlertSummary">
+                <div className="savedAlertSummaryHeader">
+                  <strong>Saved Search Alerts</strong>
+                  <span>{searchAlerts.length} active</span>
+                </div>
+                {searchAlerts.length > 0 ? (
+                  <div className="stackList compactList">
+                    {searchAlerts.slice(0, 3).map((alert) => (
+                      <div className="infoRow alertSummaryRow" key={alert.id}>
+                        <div>
+                          <strong>{alert.area || alert.city}</strong>
+                          <span>
+                            {alert.city}
+                            {alert.maxBudget
+                              ? ` • Up to LKR ${alert.maxBudget}`
+                              : ""}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="inlineAction"
+                          onClick={() => handleDeleteAlert(alert.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="emptyText">
+                    Create saved searches from the watchlist page to get live alerts
+                    for new matching boardings, price drops, and demand spikes.
+                  </p>
+                )}
+              </div>
+
+              <div className="testEmailRow">
+                <div>
+                  <strong>SMTP Test</strong>
+                  <span>
+                    Send a test notification email to your account to verify the
+                    email channel is working.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="inlineAction primaryAction"
+                  onClick={handleSendTestEmail}
+                  disabled={isSendingTestEmail}
+                >
+                  {isSendingTestEmail ? "Sending..." : "Send Test Email"}
+                </button>
+              </div>
+            </article>
           </section>
 
           <section className="savedSection">
@@ -291,14 +460,26 @@ function ProfilePage() {
   return (
     <Suspense fallback={<p>Loading dashboard...</p>}>
       <Await
-        resolve={Promise.all([data.postResponse, data.chatResponse])}
+        resolve={Promise.all([
+          data.postResponse,
+          data.chatResponse,
+          data.searchAlertResponse,
+          data.preferenceResponse,
+        ])}
         errorElement={<p>Error loading dashboard!</p>}
       >
-        {([postResponse, chatResponse]) => (
+        {([
+          postResponse,
+          chatResponse,
+          searchAlertResponse,
+          preferenceResponse,
+        ]) => (
           <StudentDashboard
             currentUser={currentUser}
             postData={postResponse.data}
             chats={chatResponse.data}
+            initialSearchAlerts={searchAlertResponse.data}
+            initialPreferences={preferenceResponse.data}
             unreadCount={number}
             notifications={notifications}
             initialChatId={initialChatId}

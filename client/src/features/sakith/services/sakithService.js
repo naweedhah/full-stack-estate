@@ -1,21 +1,31 @@
-import axios from "axios";
-
-const API = "http://localhost:5000/api";
+import apiRequest from "../../../lib/apiRequest";
 
 export const createInquiry = (data) =>
-  axios.post(`${API}/inquiry`, data);
+  apiRequest.post("/inquiry", data);
+
+export const getInquiries = () =>
+  apiRequest.get("/inquiry");
 
 export const acceptInquiry = (id) =>
-  axios.patch(`${API}/inquiry/${id}/accept`);
+  apiRequest.patch(`/inquiry/${id}/accept`);
+
+export const updateInquiryStatus = (id, status) =>
+  apiRequest.patch(`/inquiry/${id}`, { status });
 
 export const createReport = (data) =>
-  axios.post(`${API}/report`, data);
+  apiRequest.post("/report", data);
 
 export const getReports = () =>
-  axios.get(`${API}/report`);
+  apiRequest.get("/report");
 
-export const resolveReport = (id) =>
-  axios.patch(`${API}/report/${id}`);
+export const resolveReport = (id, data = {}) =>
+  apiRequest.patch(`/report/${id}`, data);
 
-export const warnUser = (userId) =>
-  axios.post(`${API}/report/warn`, { userId });
+export const warnUser = (reportId) =>
+  apiRequest.post("/report/warn", { reportId });
+
+export const getChatMessages = (chatId) =>
+  apiRequest.get(`/sakith-chat/${chatId}`);
+
+export const sendChatMessage = (data) =>
+  apiRequest.post("/sakith-chat/send", data);

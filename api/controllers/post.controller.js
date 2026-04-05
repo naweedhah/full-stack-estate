@@ -1,5 +1,13 @@
 import prisma from "../src/shared/lib/prisma.js";
 import jwt from "jsonwebtoken";
+import {
+  createNotification,
+  maybeCreateSmartReminder,
+  notifyDemandSpike,
+  notifyLowAvailability,
+  notifyPriceDrop,
+  notifyWatchlistAndSearchMatches,
+} from "../src/shared/services/notification.service.js";
 
 const ACTIVE_BOOKING_STATUSES = ["pending", "approved", "paymentPending", "confirmed"];
 
@@ -151,6 +159,16 @@ export const addPost = async (req, res) => {
         },
       },
     });
+
+    await notifyWatchlistAndSearchMatches({
+      ...newPost,
+      postDetail: body.postDetail,
+    });
+    await notifyDemandSpike({
+      ...newPost,
+      postDetail: body.postDetail,
+    });
+
     res.status(200).json(newPost);
   } catch (err) {
     console.log(err);
@@ -159,8 +177,50 @@ export const addPost = async (req, res) => {
 };
 
 export const updatePost = async (req, res) => {
+  const id = req.params.id;
+  const tokenUserId = req.userId;
+  const body = req.body;
+
   try {
-    res.status(200).json();
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        postDetail: true,
+      },
+    });
+
+    if (!existingPost) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    if (existingPost.ownerId !== tokenUserId) {
+      return res.status(403).json({ message: "Not Authorized!" });
+    }
+
+    const updatedPost = await prisma.post.update({
+      where: { id },
+      data: {
+        ...(body.postData || {}),
+        ...(body.postDetail
+          ? {
+              postDetail: {
+                update: body.postDetail,
+              },
+            }
+          : {}),
+      },
+      include: {
+        postDetail: true,
+      },
+    });
+
+    await notifyPriceDrop({
+      post: updatedPost,
+      previousRent: existingPost.rent,
+    });
+    await notifyWatchlistAndSearchMatches(updatedPost);
+
+    res.status(200).json(updatedPost);
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to update posts" });
@@ -286,20 +346,49 @@ export const createBookingRequest = async (req, res) => {
       },
     });
 
-    await prisma.notification.create({
-      data: {
-        userId: post.ownerId,
-        type: "bookingRequested",
-        channel: "inApp",
-        title: "New booking request received",
-        message: `${user.fullName || user.username} requested to book "${post.title}".`,
-        metadata: {
-          bookingRequestId: bookingRequest.id,
-          postId: post.id,
-          studentId: tokenUserId,
-        },
+    await createNotification({
+      userId: post.ownerId,
+      type: "bookingRequested",
+      title: "New booking request received",
+      message: `${user.fullName || user.username} requested to book "${post.title}".`,
+      metadata: {
+        bookingRequestId: bookingRequest.id,
+        postId: post.id,
+        studentId: tokenUserId,
       },
     });
+
+    await createNotification({
+      userId: tokenUserId,
+      type: "bookingRequested",
+      title: "Booking request sent",
+      message: `Your booking request for "${post.title}" has been sent to the owner.`,
+      metadata: {
+        bookingRequestId: bookingRequest.id,
+        postId: post.id,
+        ownerId: post.ownerId,
+      },
+    });
+
+    const remainingSlotsAfterBooking = Math.max(0, remainingSlots - 1);
+
+    await notifyLowAvailability({
+      post,
+      remainingSlots: remainingSlotsAfterBooking,
+    });
+
+    if (remainingSlotsAfterBooking < 1) {
+      await maybeCreateSmartReminder({
+        userId: post.ownerId,
+        title: "A listing just filled up",
+        message: `"${post.title}" has no remaining slots. Review pending bookings and availability.`,
+        metadata: {
+          postId,
+          remainingSlots: remainingSlotsAfterBooking,
+        },
+        recentHours: 6,
+      });
+    }
 
     res.status(201).json({
       message: "Booking request sent",

@@ -1,7 +1,7 @@
 import "./singlePage.scss";
 import Slider from "../../components/slider/Slider";
 import Map from "../../components/map/Map";
-import { useNavigate, useLoaderData } from "react-router-dom";
+import { Link, useNavigate, useLoaderData } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../context/AuthContext";
@@ -226,6 +226,18 @@ function SinglePage() {
               {saved ? "Listing Saved" : "Save Listing"}
             </button>
           </div>
+          {currentUser && currentUser.role === "student" && currentUser.id !== post.ownerId && (
+            <div className="buttons">
+              <Link
+                to={`/sakith/inquiry?postId=${post.id}&ownerId=${post.ownerId}&title=${encodeURIComponent(post.title)}&type=view`}
+              >
+                <button>
+                  <img src="/chat.png" alt="" />
+                  Send Inquiry
+                </button>
+              </Link>
+            </div>
+          )}
           {bookingError && <p className="bookingError">{bookingError}</p>}
         </div>
       </div>

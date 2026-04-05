@@ -61,6 +61,12 @@ body {
   margin-bottom: 16px;
 }
 
+.sakith-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+}
+
 /* =========================
    🔘 BUTTONS
 ========================= */
@@ -106,6 +112,12 @@ body {
   cursor: not-allowed;
 }
 
+.action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* =========================
    ✏️ INPUTS
 ========================= */
@@ -132,6 +144,7 @@ body {
   padding: 12px;
   margin-bottom: 10px;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
 }
 
 /* =========================
@@ -142,6 +155,10 @@ body {
   color: var(--danger);
   font-weight: bold;
   font-size: 14px;
+}
+
+.warning-soft {
+  color: #a35e00;
 }
 
 /* =========================
@@ -168,10 +185,57 @@ h1, h2, h3 {
   display: flex;
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .flex-center {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.chat-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chat-messages {
+  min-height: 320px;
+}
+
+.chat-input-row {
+  gap: 12px;
+}
+
+.inquiry-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  align-items: flex-start;
+}
+
+.info-panel {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.success-text {
+  color: #1c7c54;
+  font-weight: 600;
+}
+
+.error-text {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .mt-1 { margin-top: 8px; }
@@ -181,3 +245,19 @@ h1, h2, h3 {
 .mb-1 { margin-bottom: 8px; }
 .mb-2 { margin-bottom: 16px; }
 .mb-3 { margin-bottom: 24px; }
+
+.ml-2 { margin-left: 8px; }
+
+@media (max-width: 768px) {
+  .inquiry-item {
+    flex-direction: column;
+  }
+
+  .chat-input-row {
+    flex-direction: column;
+  }
+
+  .ml-2 {
+    margin-left: 0;
+  }
+}

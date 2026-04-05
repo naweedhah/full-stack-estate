@@ -19,6 +19,7 @@ import WatchlistPage from "./features/watchlist/pages/watchlistPage";
 import RoommatePage from "./features/roommate/pages/roommatePage";
 import InquiryBox from "./features/sakith/components/InquiryBox";
 import AdminDashboard from "./features/sakith/pages/AdminDashboard";
+import ChatPage from "./features/sakith/pages/ChatPage";
 
 
 function App() {
@@ -86,6 +87,10 @@ function App() {
         {
            path: "/sakith/admin",
           element: <AdminDashboard />
+        },
+        {
+          path: "/sakith/chat/:chatId",
+          element: <ChatPage />
         }
       ],
     },

@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import prisma from "../../shared/lib/prisma.js";
+import { createNotification } from "../../shared/services/notification.service.js";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -86,7 +87,7 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         username: normalizedUsername,
         email: normalizedEmail,
@@ -96,6 +97,18 @@ export const register = async (req, res) => {
         fullName: normalizedFullName,
         phone: normalizedPhone,
       },
+    });
+
+    await createNotification({
+      userId: createdUser.id,
+      type: "accountCreated",
+      title: "Welcome to BoardingFinder",
+      message: `Hi ${normalizedFullName}, your account is ready. You can now explore boardings, track alerts, and message owners safely.`,
+      metadata: {
+        role,
+        username: normalizedUsername,
+      },
+      bypassPreference: true,
     });
 
     res.status(201).json({ message: "User created successfully" });

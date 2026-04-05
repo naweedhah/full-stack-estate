@@ -1,4 +1,4 @@
-const detectScam = (text) => {
+const detectScam = (text = "") => {
   const t = text.toLowerCase();
 
   if (t.includes("advance payment") || t.includes("send money")) {

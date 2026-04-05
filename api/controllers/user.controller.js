@@ -1,5 +1,13 @@
 import prisma from "../src/shared/lib/prisma.js";
 import bcrypt from "bcrypt";
+import {
+  canSendEmail,
+  getOrCreateNotificationPreference,
+  markNotificationAsReadForUser,
+  maybeCreateSmartReminder,
+  notifyRoommateMatches,
+} from "../src/shared/services/notification.service.js";
+import { sendNotificationEmail } from "../src/shared/services/email.service.js";
 
 const ROOMMATE_WEIGHTS = {
   budget: 25,
@@ -62,6 +70,15 @@ const ROOMMATE_FOOD_PREFERENCES = [
   "No special preference",
   "Halal-friendly",
   "Vegan-friendly",
+];
+
+const WATCHLIST_GENDER_OPTIONS = ["male", "female", "any"];
+const WATCHLIST_BOARDING_TYPES = [
+  "singleRoom",
+  "sharedRoom",
+  "annex",
+  "hostel",
+  "houseShare",
 ];
 
 const buildReasonList = (reasons) =>
@@ -315,7 +332,37 @@ export const profilePosts = async (req, res) => {
     });
 
     const savedPosts = saved.map((item) => item.post);
-    res.status(200).json({ userPosts, savedPosts });
+    const pendingBookings = await prisma.bookingRequest.findMany({
+      where: {
+        studentId: tokenUserId,
+        status: {
+          in: ["pending", "approved", "paymentPending"],
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      take: 5,
+    });
+
+    const staleBooking = pendingBookings.find(
+      (booking) => booking.createdAt <= new Date(Date.now() - 24 * 60 * 60 * 1000),
+    );
+
+    if (staleBooking) {
+      await maybeCreateSmartReminder({
+        userId: tokenUserId,
+        title: "Booking still pending",
+        message: "One of your bookings has been waiting for over 24 hours. Check for updates or follow up with the owner.",
+        metadata: {
+          bookingRequestId: staleBooking.id,
+          postId: staleBooking.postId,
+        },
+        recentHours: 12,
+      });
+    }
+
+    res.status(200).json({ userPosts, savedPosts, pendingBookings });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to get profile posts!" });
@@ -342,7 +389,7 @@ export const getNotifications = async (req, res) => {
   const tokenUserId = req.userId;
 
   try {
-    const [unseenCount, notifications] = await Promise.all([
+    const [unseenCount, notifications, preferences] = await Promise.all([
       prisma.notification.count({
         where: {
           userId: tokenUserId,
@@ -356,11 +403,12 @@ export const getNotifications = async (req, res) => {
         orderBy: {
           createdAt: "desc",
         },
-        take: 8,
+        take: 20,
       }),
+      getOrCreateNotificationPreference(tokenUserId),
     ]);
 
-    res.status(200).json({ unseenCount, notifications });
+    res.status(200).json({ unseenCount, notifications, preferences });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to get notifications!" });
@@ -371,10 +419,30 @@ export const markNotificationRead = async (req, res) => {
   const tokenUserId = req.userId;
 
   try {
-    const notification = await prisma.notification.update({
+    const notification = await markNotificationAsReadForUser(
+      tokenUserId,
+      req.params.id,
+    );
+
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found!" });
+    }
+
+    res.status(200).json(notification);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to update notification!" });
+  }
+};
+
+export const markAllNotificationsRead = async (req, res) => {
+  const tokenUserId = req.userId;
+
+  try {
+    await prisma.notification.updateMany({
       where: {
-        id: req.params.id,
         userId: tokenUserId,
+        isRead: false,
       },
       data: {
         isRead: true,
@@ -382,10 +450,241 @@ export const markNotificationRead = async (req, res) => {
       },
     });
 
-    res.status(200).json(notification);
+    res.status(200).json({ message: "All notifications marked as read" });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Failed to update notification!" });
+    res.status(500).json({ message: "Failed to update notifications!" });
+  }
+};
+
+export const getNotificationPreferences = async (req, res) => {
+  try {
+    const preferences = await getOrCreateNotificationPreference(req.userId);
+    res.status(200).json(preferences);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to get notification preferences!" });
+  }
+};
+
+export const updateNotificationPreferences = async (req, res) => {
+  try {
+    const preferences = await getOrCreateNotificationPreference(req.userId);
+
+    const allowedKeys = [
+      "emailEnabled",
+      "inAppEnabled",
+      "pushEnabled",
+      "smsEnabled",
+      "bookingUpdates",
+      "watchlistAlerts",
+      "searchAlerts",
+      "priceAlerts",
+      "demandAlerts",
+      "inquiryAlerts",
+      "roommateAlerts",
+      "safetyAlerts",
+      "moderationAlerts",
+      "accountSecurityAlerts",
+    ];
+
+    const nextData = Object.fromEntries(
+      allowedKeys
+        .filter((key) => key in req.body)
+        .map((key) => [key, Boolean(req.body[key])]),
+    );
+
+    const updated = await prisma.notificationPreference.update({
+      where: { id: preferences.id },
+      data: nextData,
+    });
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to update notification preferences!" });
+  }
+};
+
+export const sendTestNotificationEmail = async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ message: "Test email helpers are disabled in production." });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        username: true,
+      },
+    });
+
+    if (!user?.email) {
+      return res.status(400).json({ message: "Your account does not have an email address." });
+    }
+
+    if (!canSendEmail()) {
+      return res.status(400).json({
+        message: "SMTP is not configured yet. Add SMTP settings in api/.env and restart the backend.",
+      });
+    }
+
+    const result = await sendNotificationEmail({
+      to: user.email,
+      recipientName: user.fullName || user.username,
+      title: "Test email from BoardingFinder",
+      message:
+        "This is a development test email to confirm that your SMTP notification setup is working.",
+      metadata: {
+        kind: "test-email",
+        sentAt: new Date().toISOString(),
+      },
+    });
+
+    if (!result.delivered) {
+      return res.status(400).json({
+        message: "SMTP is configured but the email could not be delivered.",
+        reason: result.reason,
+      });
+    }
+
+    res.status(200).json({
+      message: `Test email sent to ${user.email}`,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: err.message || "Failed to send test email.",
+      code: err.code || null,
+    });
+  }
+};
+
+export const getSavedSearchAlerts = async (req, res) => {
+  try {
+    const alerts = await prisma.watchlist.findMany({
+      where: {
+        userId: req.userId,
+        postId: null,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.status(200).json(alerts);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to get saved alerts!" });
+  }
+};
+
+export const createSavedSearchAlert = async (req, res) => {
+  const normalizeNullableString = (value) =>
+    value == null || value === "" ? null : String(value).trim();
+  const normalizeNullableNumber = (value) =>
+    value == null || value === "" ? null : Number(value);
+  const normalizeNullableBoolean = (value) => {
+    if (value == null || value === "") return null;
+    if (typeof value === "boolean") return value;
+    return value === "true";
+  };
+
+  const city = normalizeNullableString(req.body.city);
+  const area = normalizeNullableString(req.body.area);
+  const minBudget = normalizeNullableNumber(req.body.minBudget);
+  const maxBudget = normalizeNullableNumber(req.body.maxBudget);
+  const preferredTenantGender = normalizeNullableString(
+    req.body.preferredTenantGender,
+  );
+  const boardingType = normalizeNullableString(req.body.boardingType);
+  const minCapacity = normalizeNullableNumber(req.body.minCapacity);
+  const wifiRequired = normalizeNullableBoolean(req.body.wifiRequired);
+  const mealsRequired = normalizeNullableBoolean(req.body.mealsRequired);
+  const attachedBathroomNeeded = normalizeNullableBoolean(
+    req.body.attachedBathroomNeeded,
+  );
+
+  if (!city) {
+    return res.status(400).json({ message: "Preferred city is required." });
+  }
+
+  if (minBudget != null && maxBudget != null && maxBudget < minBudget) {
+    return res.status(400).json({ message: "Max budget must be greater than min budget." });
+  }
+
+  if (
+    preferredTenantGender &&
+    !WATCHLIST_GENDER_OPTIONS.includes(preferredTenantGender)
+  ) {
+    return res.status(400).json({ message: "Invalid preferred tenant gender." });
+  }
+
+  if (boardingType && !WATCHLIST_BOARDING_TYPES.includes(boardingType)) {
+    return res.status(400).json({ message: "Invalid boarding type." });
+  }
+
+  try {
+    const alert = await prisma.watchlist.create({
+      data: {
+        userId: req.userId,
+        city,
+        area,
+        minBudget,
+        maxBudget,
+        preferredTenantGender,
+        boardingType,
+        minCapacity,
+        wifiRequired,
+        mealsRequired,
+        attachedBathroomNeeded,
+      },
+    });
+
+    await createNotification({
+      userId: req.userId,
+      type: "searchMatch",
+      title: "Search alert saved",
+      message: `We'll notify you about matching boardings in ${area || city}.`,
+      metadata: {
+        watchlistId: alert.id,
+        city,
+        area,
+      },
+    });
+
+    res.status(201).json(alert);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to save search alert!" });
+  }
+};
+
+export const deleteSavedSearchAlert = async (req, res) => {
+  try {
+    const alert = await prisma.watchlist.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.userId,
+        postId: null,
+      },
+    });
+
+    if (!alert) {
+      return res.status(404).json({ message: "Saved alert not found." });
+    }
+
+    await prisma.watchlist.delete({
+      where: { id: alert.id },
+    });
+
+    res.status(200).json({ message: "Saved alert deleted." });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to delete saved alert!" });
   }
 };
 
@@ -581,6 +880,67 @@ export const upsertRoommateProfile = async (req, res) => {
         sociabilityLevel: normalizedSociabilityLevel,
         notes: normalizedNotes,
       },
+    });
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: tokenUserId },
+      include: {
+        roommatePreference: true,
+      },
+    });
+
+    const candidates = await prisma.user.findMany({
+      where: {
+        id: { not: tokenUserId },
+        role: "student",
+        gender: currentUser.gender || undefined,
+        isActive: true,
+      },
+      include: {
+        roommatePreference: true,
+      },
+    });
+
+    const matches = candidates
+      .filter((candidate) => candidate.roommatePreference)
+      .map((candidate) =>
+        calculateRoommateMatch(
+          currentUser,
+          profile,
+          candidate,
+          candidate.roommatePreference,
+        ),
+      )
+      .filter((item) => item.score > 35)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+
+    for (const match of matches.slice(0, 5)) {
+      const [userAId, userBId] = [tokenUserId, match.user.id].sort();
+      await prisma.roommateMatch.upsert({
+        where: {
+          userAId_userBId: {
+            userAId,
+            userBId,
+          },
+        },
+        update: {
+          score: match.score,
+          reasons: match.reasons,
+          isActive: true,
+        },
+        create: {
+          userAId,
+          userBId,
+          score: match.score,
+          reasons: match.reasons,
+        },
+      });
+    }
+
+    await notifyRoommateMatches({
+      userId: tokenUserId,
+      matches,
     });
 
     res.status(200).json(profile);

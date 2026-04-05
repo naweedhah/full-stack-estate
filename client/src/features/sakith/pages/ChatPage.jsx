@@ -1,53 +1,109 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { format } from "timeago.js";
+import { useParams } from "react-router-dom";
 import ScamWarning from "../components/ScamWarning";
 import ReportButton from "../components/ReportButton";
+import {
+  getChatMessages,
+  sendChatMessage,
+} from "../services/sakithService";
 import "../styles/sakith.css";
 
 export default function ChatPage() {
+  const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const sendMessage = () => {
-    if (!text.trim()) return;
-
-    const msg = {
-      id: Date.now(),
-      text,
-      chatId: "chat1"
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        setIsLoading(true);
+        const res = await getChatMessages(chatId);
+        setMessages(res.data);
+      } catch (error) {
+        setErrorMessage(
+          error.response?.data?.message || "Failed to load messages.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setMessages([...messages, msg]);
-    setText("");
+    if (chatId) {
+      loadMessages();
+    }
+  }, [chatId]);
+
+  const handleSendMessage = async () => {
+    if (!text.trim()) return;
+
+    try {
+      setIsSending(true);
+      setErrorMessage("");
+      const res = await sendChatMessage({
+        chatId,
+        text,
+      });
+      setMessages((prev) => [...prev, res.data]);
+      setText("");
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message || "Failed to send message.",
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="card">
-      <h2>Chat</h2>
-
-      {/* Chat Messages */}
-      <div style={{ minHeight: "250px" }}>
-        {messages.map((msg) => (
-          <div key={msg.id} className="message">
-            <p>{msg.text}</p>
-
-            <ScamWarning text={msg.text} />
-            <ReportButton chatId={msg.chatId} />
-          </div>
-        ))}
+    <div className="sakith-page">
+      <div className="card">
+        <h2>Secure Chat</h2>
+        <p className="text-muted">
+          Messages are stored in your main chat system and flagged when they look risky.
+        </p>
+        {errorMessage && <p className="error-text mt-2">{errorMessage}</p>}
       </div>
 
-      {/* Input Section */}
-      <div className="flex mt-2">
-        <input
-          className="input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
-        />
+      <div className="card">
+        <div className="chat-shell">
+          <div className="chat-messages">
+            {isLoading ? (
+              <p className="text-muted">Loading conversation...</p>
+            ) : messages.length === 0 ? (
+              <p className="text-muted">No messages yet. Send the first one below.</p>
+            ) : (
+              messages.map((msg) => (
+                <div key={msg.id} className="message">
+                  <p>{msg.text}</p>
+                  <span className="text-muted">{format(msg.createdAt)}</span>
+                  <ScamWarning text={msg.text} scamFlag={msg.scamFlag} />
+                  <ReportButton messageId={msg.id} />
+                </div>
+              ))
+            )}
+          </div>
 
-        <button className="btn btn-primary ml-2" onClick={sendMessage}>
-          Send
-        </button>
+          <div className="flex mt-2 chat-input-row">
+            <input
+              className="input"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type a message..."
+            />
+
+            <button
+              className="btn btn-primary ml-2"
+              onClick={handleSendMessage}
+              disabled={isSending}
+            >
+              {isSending ? "Sending..." : "Send"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
