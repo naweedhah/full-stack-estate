@@ -32,66 +32,133 @@ export default function Login() {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-[75vh] max-w-md flex-col justify-center px-4 py-12">
-      <div className="absolute inset-x-0 top-8 mx-auto h-36 max-w-md rounded-full bg-gradient-to-r from-emerald-200/60 to-cyan-200/50 blur-2xl" />
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ backgroundColor: "#FCF5F3" }}
+    >
+      {/* Background glow */}
+      <div className="absolute inset-x-0 top-10 mx-auto h-40 max-w-md rounded-full blur-3xl"
+        style={{ background: "linear-gradient(to right, #FECE51, #BED9D8)" }}
+      />
 
-      <div className="relative rounded-3xl border border-white/60 bg-white/85 p-8 shadow-xl shadow-emerald-900/10 backdrop-blur-xl">
-        <h1 className="font-display text-2xl font-bold text-slate-900">Sign in</h1>
-        <p className="mt-3 space-y-1 text-xs leading-relaxed text-slate-600">
-          <span className="block">
-            <strong className="text-slate-800">Owner (all requests):</strong>{" "}
-            <code className="rounded bg-slate-100 px-1">owner@gmail.com</code> /{" "}
-            <code className="rounded bg-slate-100 px-1">Abc123</code>
-          </span>
-          <span className="block">
-            <strong className="text-slate-800">Admin:</strong>{" "}
-            <code className="rounded bg-slate-100 px-1">admin@gmail.com</code> /{" "}
-            <code className="rounded bg-slate-100 px-1">Abc123</code>
-          </span>
-        </p>
+      {/* Card */}
+      <div
+        className="relative w-full max-w-md rounded-[24px] border p-8 shadow-xl"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderColor: "#E0E0E0",
+        }}
+      >
+        <h1
+          className="text-2xl font-bold"
+          style={{ color: "#2F2A27" }}
+        >
+          Sign in
+        </h1>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           {err && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div
+              className="rounded-lg px-3 py-2 text-sm"
+              style={{
+                backgroundColor: "#FFE5E7",
+                color: "#C1121F",
+              }}
+            >
               {err}
-            </p>
+            </div>
           )}
+
+          {/* Email */}
           <div>
-            <label className="text-sm font-semibold text-slate-700">Email</label>
+            <label
+              className="text-sm font-semibold"
+              style={{ color: "#544B47" }}
+            >
+              Email
+            </label>
             <input
               type="email"
               required
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white/90  px-3 py-2.5 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              className="mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none transition"
+              style={{
+                borderColor: "#E0E0E0",
+                backgroundColor: "#FFFFFF",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#008080";
+                e.target.style.boxShadow = "0 0 0 2px #BED9D8";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#E0E0E0";
+                e.target.style.boxShadow = "none";
+              }}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
+
+          {/* Password */}
           <div>
-            <label className="text-sm font-semibold text-slate-700">
+            <label
+              className="text-sm font-semibold"
+              style={{ color: "#544B47" }}
+            >
               Password
             </label>
             <input
               type="password"
               required
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              className="mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none transition"
+              style={{
+                borderColor: "#E0E0E0",
+                backgroundColor: "#FFFFFF",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#008080";
+                e.target.style.boxShadow = "0 0 0 2px #BED9D8";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#E0E0E0";
+                e.target.style.boxShadow = "none";
+              }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+
+          {/* Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:-translate-y-0.5 disabled:opacity-60"
+            className="w-full rounded-[16px] font-bold transition"
+            style={{
+              height: "48px",
+              backgroundColor: loading ? "#BED9D8" : "#FECE51",
+              color: "#2F2A27",
+              boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.target.style.backgroundColor = "#F7C14B";
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.target.style.backgroundColor = "#FECE51";
+            }}
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
+        {/* Footer */}
+        <p
+          className="mt-6 text-center text-sm"
+          style={{ color: "#7E736D" }}
+        >
           No account?{" "}
           <Link
             to="/register"
-            className="font-bold text-emerald-700 hover:underline"
+            className="font-bold"
+            style={{ color: "#008080" }}
           >
             Sign up
           </Link>

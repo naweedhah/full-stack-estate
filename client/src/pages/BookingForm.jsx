@@ -62,30 +62,15 @@ export default function BookingForm() {
 
   const validate = () => {
     const e = {};
-    if (!nameLettersOnly(form.fullName)) {
-      e.fullName = "Full name: letters and spaces only.";
-    }
-    if (!gmailValid(form.gmail)) {
-      e.gmail = "Use a valid Gmail ending with @gmail.com.";
-    }
+    if (!nameLettersOnly(form.fullName)) e.fullName = "Full name: letters and spaces only.";
+    if (!gmailValid(form.gmail)) e.gmail = "Use a valid Gmail ending with @gmail.com.";
     if (!form.gender) e.gender = "Select gender.";
-    if (!phoneValid(form.phone)) {
-      e.phone = "Phone must be 10 digits starting with 07.";
-    }
-    if (!nicValid(form.nic)) {
-      e.nic = "NIC: 10 digits or 9 digits + V.";
-    }
+    if (!phoneValid(form.phone)) e.phone = "Phone must be 10 digits starting with 07.";
+    if (!nicValid(form.nic)) e.nic = "NIC must be 12 digits only, or 10 digits followed by V/v.";
     if (!form.address?.trim()) e.address = "Address is required.";
-    if (!positiveInt(form.monthsStay)) {
-      e.monthsStay = "Months must be a whole number greater than zero.";
-    }
-    if (!positiveInt(form.age)) {
-      e.age = "Age must be a whole number greater than zero.";
-    }
-    if (!form.rulesAcknowledgement?.trim()) {
-      e.rulesAcknowledgement =
-        "Confirm you have read the owner rules (required).";
-    }
+    if (!positiveInt(form.monthsStay)) e.monthsStay = "Months must be a whole number > 0.";
+    if (!positiveInt(form.age)) e.age = "Age must be a whole number > 0.";
+    if (!form.rulesAcknowledgement?.trim()) e.rulesAcknowledgement = "Confirm rules acknowledgment.";
     if (!file) e.file = "Please attach an image.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -124,13 +109,10 @@ export default function BookingForm() {
 
     setSaving(true);
     try {
-      await api.post("/bookings", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/bookings", fd, { headers: { "Content-Type": "multipart/form-data" } });
       navigate("/profile/student");
     } catch (err) {
-      const msg = err.response?.data?.message || "Could not submit request.";
-      setSubmitErr(msg);
+      setSubmitErr(err.response?.data?.message || "Could not submit request.");
     } finally {
       setSaving(false);
     }
@@ -142,12 +124,8 @@ export default function BookingForm() {
         <Loader
           variant="inline"
           title="Reservation form"
-          subtitle="Loading boarding details for your request…"
-          tips={[
-            "Fetching listing metadata",
-            "Preparing validation rules",
-            "Almost there",
-          ]}
+          subtitle="Loading boarding details…"
+          tips={["Fetching listing metadata", "Preparing validation rules", "Almost there"]}
         />
       </div>
     );
@@ -156,8 +134,11 @@ export default function BookingForm() {
   if (!boarding) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <p className="text-slate-600">This boarding could not be loaded.</p>
-        <Link to="/" className="mt-4 inline-block font-semibold text-emerald-600 hover:underline">
+        <p className="text-[#605853]">This boarding could not be loaded.</p>
+        <Link
+          to="/"
+          className="mt-4 inline-block font-semibold text-[#008080] hover:underline"
+        >
           Back home
         </Link>
       </div>
@@ -165,40 +146,39 @@ export default function BookingForm() {
   }
 
   const field =
-    "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100";
-  const errText = "mt-1 text-xs text-red-600";
+    "mt-1 w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2.5 text-sm text-[#544B47] placeholder-[#7A716D] outline-none focus:border-[#008080] focus:ring-2 focus:ring-[#BED9D8]";
+  const errText = "mt-1 text-xs text-[#C1121F]";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 bg-[#FCF5F3]">
       <Link
         to={`/boarding/${boardingId}`}
-        className="text-sm font-medium text-brand-600 hover:text-brand-500"
+        className="text-sm font-medium text-[#008080] hover:text-[#005959]"
       >
         ← Back to listing
       </Link>
-      <h1 className="mt-6 font-display text-2xl font-bold text-slate-900">
+
+      <h1 className="mt-6 font-display text-2xl font-bold text-[#332D2A]">
         Reservation request · {boarding.title}
       </h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Room type:{" "}
-        <span className="font-semibold capitalize text-brand-700">
-          {roomType}
-        </span>
-        . All fields are required. The owner is notified after you submit.
+
+      <p className="mt-2 text-sm text-[#7E736D]">
+        Room type: <span className="font-semibold capitalize text-[#008080]">{roomType}</span>.
+        All fields are required. Owner is notified after you submit.
       </p>
 
       <form
         onSubmit={onSubmit}
-        className="mt-8 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="mt-8 space-y-5 rounded-2xl border border-[#E0E0E0] bg-white p-6 shadow-sm"
       >
         {submitErr && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="rounded-lg bg-[#C1121F]/10 px-3 py-2 text-sm text-[#C1121F]">
             {submitErr}
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Full name</label>
+          <label className="text-sm font-medium text-[#544B47]">Full name</label>
           <input
             className={field}
             value={form.fullName}
@@ -209,7 +189,7 @@ export default function BookingForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Gmail</label>
+          <label className="text-sm font-medium text-[#544B47]">Gmail</label>
           <input
             type="email"
             className={field}
@@ -221,18 +201,18 @@ export default function BookingForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Photo</label>
+          <label className="text-sm font-medium text-[#544B47]">Photo</label>
           <input
             type="file"
             accept="image/*"
-            className="mt-1 block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:font-medium file:text-brand-700"
+            className="mt-1 block w-full text-sm text-[#7A716D] file:mr-4 file:rounded-lg file:border-0 file:bg-[#FECE51] file:px-4 file:py-2 file:font-medium file:text-[#332D2A]"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
           {errors.file && <p className={errText}>{errors.file}</p>}
         </div>
 
         <div>
-          <span className="text-sm font-medium text-slate-700">Gender</span>
+          <span className="text-sm font-medium text-[#544B47]">Gender</span>
           <div className="mt-2 flex gap-4">
             {["male", "female"].map((g) => (
               <label key={g} className="flex items-center gap-2 text-sm">
@@ -241,7 +221,7 @@ export default function BookingForm() {
                   name="gender"
                   checked={form.gender === g}
                   onChange={() => setForm({ ...form, gender: g })}
-                  className="text-brand-600"
+                  className="accent-[#008080]"
                 />
                 <span className="capitalize">{g}</span>
               </label>
@@ -251,9 +231,7 @@ export default function BookingForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">
-            Phone (07xxxxxxxx)
-          </label>
+          <label className="text-sm font-medium text-[#544B47]">Phone (07xxxxxxxx)</label>
           <input
             className={field}
             value={form.phone}
@@ -265,18 +243,19 @@ export default function BookingForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">NIC</label>
+          <label className="text-sm font-medium text-[#544B47]">NIC</label>
           <input
             className={field}
             value={form.nic}
-            onChange={(e) => setForm({ ...form, nic: e.target.value })}
-            placeholder="9 digits + V or 10 digits"
+            onChange={(e) => setForm({ ...form, nic: e.target.value.toUpperCase() })}
+            placeholder="12 digits, or 10 digits + V"
+            maxLength={12}
           />
           {errors.nic && <p className={errText}>{errors.nic}</p>}
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Address</label>
+          <label className="text-sm font-medium text-[#544B47]">Address</label>
           <textarea
             rows={3}
             className={field}
@@ -289,9 +268,7 @@ export default function BookingForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">
-              Months staying
-            </label>
+            <label className="text-sm font-medium text-[#544B47]">Months staying</label>
             <input
               type="number"
               min={1}
@@ -299,12 +276,11 @@ export default function BookingForm() {
               value={form.monthsStay}
               onChange={(e) => setForm({ ...form, monthsStay: e.target.value })}
             />
-            {errors.monthsStay && (
-              <p className={errText}>{errors.monthsStay}</p>
-            )}
+            {errors.monthsStay && <p className={errText}>{errors.monthsStay}</p>}
           </div>
+
           <div>
-            <label className="text-sm font-medium text-slate-700">Age</label>
+            <label className="text-sm font-medium text-[#544B47]">Age</label>
             <input
               type="number"
               min={1}
@@ -317,16 +293,14 @@ export default function BookingForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">
-            Rules & regulations — type your understanding or acceptance
+          <label className="text-sm font-medium text-[#544B47]">
+            Rules & regulations — type your understanding
           </label>
           <textarea
             rows={4}
             className={field}
             value={form.rulesAcknowledgement}
-            onChange={(e) =>
-              setForm({ ...form, rulesAcknowledgement: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, rulesAcknowledgement: e.target.value })}
             placeholder="I have read and agree to respect the owner's house rules…"
           />
           {errors.rulesAcknowledgement && (
@@ -337,7 +311,7 @@ export default function BookingForm() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-2xl bg-brand-600 py-3.5 font-semibold text-white shadow-md hover:bg-brand-500 disabled:opacity-60"
+          className="w-full rounded-2xl bg-[#FECE51] py-4 font-semibold text-[#332D2A] shadow-md hover:bg-[#F7C14B] disabled:opacity-60"
         >
           {saving ? "Submitting…" : "Submit & notify owner"}
         </button>

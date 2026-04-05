@@ -67,11 +67,11 @@ export default function LiveChat({ bookingId, onClose }) {
   };
 
   return (
-    <div className="flex max-h-[420px] flex-col overflow-hidden rounded-2xl border border-emerald-100/80 bg-white shadow-xl shadow-emerald-900/10">
-      <div className="flex items-center justify-between bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-3 text-white">
+    <div className="flex max-h-[420px] flex-col overflow-hidden rounded-2xl border border-[#E0E0E0] bg-white shadow-lg shadow-[#008080]/10">
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#008080] to-[#006666] px-4 py-3 text-white">
         <div>
           <p className="font-display text-sm font-semibold">Live chat</p>
-          <p className="text-xs text-emerald-50">
+          <p className="text-xs text-[#BED9D8]">
             {connected ? "● Online" : "○ Connecting…"}
           </p>
         </div>
@@ -85,13 +85,15 @@ export default function LiveChat({ bookingId, onClose }) {
           </button>
         )}
       </div>
+
       <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
         {loading && <LoaderInline label="Loading messages…" />}
         {!loading && messages.length === 0 && (
-          <p className="text-center text-slate-400">
+          <p className="text-center text-[#7E736D]">
             Say hello and discuss rules before the owner decides.
           </p>
         )}
+
         {messages.map((m) => {
           const mine =
             m.sender?._id === user?.id || m.sender?.id === user?.id;
@@ -103,12 +105,12 @@ export default function LiveChat({ bookingId, onClose }) {
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 ${
                   mine
-                    ? "rounded-br-md bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-md"
-                    : "rounded-bl-md bg-slate-100 text-slate-800"
+                    ? "rounded-br-md bg-gradient-to-br from-[#008080] to-[#006666] text-white shadow-md"
+                    : "rounded-bl-md bg-[#F2EBE8] text-[#605853] shadow-sm"
                 }`}
               >
                 {!mine && (
-                  <p className="mb-0.5 text-xs font-medium text-brand-700">
+                  <p className="mb-0.5 text-xs font-medium text-[#008080]">
                     {m.sender?.name}
                   </p>
                 )}
@@ -119,17 +121,18 @@ export default function LiveChat({ bookingId, onClose }) {
         })}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={send} className="border-t border-slate-100 p-2">
+
+      <form onSubmit={send} className="border-t border-[#E0E0E0] p-2">
         <div className="flex gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type a message…"
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            className="flex-1 rounded-xl border border-[#E0E0E0] bg-[#FCF5F3] px-3 py-2 text-sm outline-none focus:border-[#008080] focus:ring-2 focus:ring-[#BED9D8]"
           />
           <button
             type="submit"
-            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-md hover:opacity-95"
+            className="rounded-xl bg-gradient-to-r from-[#008080] to-[#006666] px-4 py-2 text-sm font-semibold text-white shadow-md hover:opacity-95"
           >
             Send
           </button>

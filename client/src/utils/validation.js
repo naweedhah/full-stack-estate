@@ -5,7 +5,11 @@ export const gmailValid = (v) =>
 
 export const phoneValid = (v) => /^07\d{8}$/.test(String(v).trim());
 
-export const nicValid = (v) => /^(\d{9}[Vv]|\d{10})$/.test(String(v).trim());
+/** 12 digits (new NIC) or 10 digits + V/v (old format) */
+export const nicValid = (v) => {
+  const value = String(v).trim().replace(/\s+/g, "");
+  return /^(?:\d{12}|\d{10}[Vv])$/.test(value);
+};
 
 export const positiveInt = (v) => {
   const n = Number(v);

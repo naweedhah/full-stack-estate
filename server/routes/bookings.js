@@ -99,7 +99,7 @@ router.post(
         gmail: payload.gmail.trim().toLowerCase(),
         gender: payload.gender,
         phone: payload.phone.trim(),
-        nic: payload.nic.trim(),
+        nic: String(payload.nic).trim().replace(/\s+/g, ""),
         address: payload.address.trim(),
         monthsStay: Number(payload.monthsStay),
         age: Number(payload.age),
@@ -147,32 +147,59 @@ router.patch(
   authMiddleware,
   requireRole("owner"),
   async (req, res) => {
-    const { status } = req.body;
-    if (!["accepted", "rejected"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status." });
+    try {
+      const { status, phone } = req.body;
+
+      if (!["accepted", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status." });
+      }
+
+      const booking = await Booking.findOne({
+        _id: req.params.id,
+        owner: req.user._id,
+      });
+
+      if (!booking) {
+        return res.status(404).json({ message: "Not found." });
+      }
+
+      booking.status = status;
+
+      // ✅ Save owner phone ONLY when accepted
+      if (status === "accepted") {
+        if (!phone || !/^07\d{8}$/.test(phone)) {
+          return res.status(400).json({
+            message: "Valid owner phone required (07XXXXXXXX)",
+          });
+        }
+        booking.ownerPhone = phone;
+      }
+
+      await booking.save();
+
+      const io = req.app.get("io");
+
+      io.to(`booking:${booking._id}`).emit("booking:status", {
+        bookingId: String(booking._id),
+        status: booking.status,
+        ownerPhone: booking.ownerPhone,
+      });
+
+      io.to(`user:${booking.student}`).emit("notification", {
+        type: "booking_status",
+        message:
+          status === "accepted"
+            ? `Your booking for ${booking.boardingTitle} was accepted. Owner contact shared.`
+            : `Your booking for ${booking.boardingTitle} was rejected.`,
+        bookingId: String(booking._id),
+        status,
+      });
+
+      res.json(booking);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
     }
-    const booking = await Booking.findOne({
-      _id: req.params.id,
-      owner: req.user._id,
-    });
-    if (!booking) return res.status(404).json({ message: "Not found." });
-    booking.status = status;
-    await booking.save();
-    const io = req.app.get("io");
-    io.to(`booking:${booking._id}`).emit("booking:status", {
-      bookingId: String(booking._id),
-      status: booking.status,
-    });
-    io.to(`user:${booking.student}`).emit("notification", {
-      type: "booking_status",
-      message:
-        status === "accepted"
-          ? `Your booking for ${booking.boardingTitle} was accepted.`
-          : `Your booking for ${booking.boardingTitle} was rejected.`,
-      bookingId: String(booking._id),
-      status,
-    });
-    res.json(booking);
   }
 );
 

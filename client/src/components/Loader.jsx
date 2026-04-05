@@ -84,7 +84,7 @@ export default function Loader({
                 ? "border-emerald-200 border-t-emerald-500 shadow-md shadow-emerald-500/15"
                 : "border-emerald-400/30 border-t-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.35)]"
             }`}
-            style={{ animationDuration: "1.1s" }}
+            style={{ animationDuration: "3.1s" }}
           />
           <span
             className={`absolute h-[6.25rem] w-[6.25rem] rounded-full border-2 border-r-transparent motion-safe:animate-spin sm:h-28 sm:w-28 ${
@@ -92,7 +92,7 @@ export default function Loader({
                 ? "border-teal-100 border-r-teal-500"
                 : "border-teal-400/25 border-r-teal-300"
             }`}
-            style={{ animationDuration: "1.7s", animationDirection: "reverse" }}
+            style={{ animationDuration: "3.7s", animationDirection: "reverse" }}
           />
           <span
             className={`absolute h-[5rem] w-[5rem] rounded-full border border-b-transparent motion-safe:animate-spin ${
@@ -100,7 +100,7 @@ export default function Loader({
                 ? "border-cyan-100 border-b-cyan-400"
                 : "border-cyan-300/40 border-b-transparent"
             }`}
-            style={{ animationDuration: "2.4s" }}
+            style={{ animationDuration: "3.4s" }}
           />
 
           <div
