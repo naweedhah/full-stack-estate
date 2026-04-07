@@ -102,14 +102,25 @@ function ListPage() {
       <div className="mapContainer">
         <Suspense fallback={<p>Loading map...</p>}>
           <Await
-            resolve={Promise.all([data.postResponse, data.demandResponse])}
-            errorElement={<p>Error loading posts!</p>}
+            resolve={data.postResponse}
+            errorElement={<p>Unable to load the map listings.</p>}
           >
-            {([postResponse, demandResponse]) => (
-              <Map
-                items={postResponse.data}
-                demandAreas={demandResponse.data.allAreas}
-              />
+            {(postResponse) => (
+              <Suspense
+                fallback={<Map items={postResponse.data} demandAreas={[]} />}
+              >
+                <Await
+                  resolve={data.demandResponse}
+                  errorElement={<Map items={postResponse.data} demandAreas={[]} />}
+                >
+                  {(demandResponse) => (
+                    <Map
+                      items={postResponse.data}
+                      demandAreas={demandResponse.data.allAreas}
+                    />
+                  )}
+                </Await>
+              </Suspense>
             )}
           </Await>
         </Suspense>

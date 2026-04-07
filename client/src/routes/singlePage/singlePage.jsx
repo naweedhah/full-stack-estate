@@ -230,7 +230,7 @@ function SinglePage() {
           </div>
           <p className="title">Location</p>
           <div className="mapContainer">
-            <Map items={[post]} />
+            <Map items={[post]} focusSingleItem />
           </div>
           <div className="buttons">
             <button

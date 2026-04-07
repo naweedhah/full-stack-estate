@@ -8,16 +8,45 @@ const HEATMAP_COLORS = {
   medium: "#F4A261",
   low: "#2A9D8F",
 };
+const SRI_LANKA_CENTER = [7.8731, 80.7718];
 
-function Map({ items, demandAreas = [] }) {
+const toCoordinate = (value) => {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+};
+
+function Map({
+  items,
+  demandAreas = [],
+  defaultCenter = SRI_LANKA_CENTER,
+  defaultZoom = 8,
+  focusSingleItem = false,
+}) {
+  const validItems = items
+    .map((item) => ({
+      ...item,
+      latitude: toCoordinate(item.latitude),
+      longitude: toCoordinate(item.longitude),
+    }))
+    .filter((item) => item.latitude !== null && item.longitude !== null);
+
+  const validDemandAreas = demandAreas
+    .map((area) => ({
+      ...area,
+      latitude: toCoordinate(area.latitude),
+      longitude: toCoordinate(area.longitude),
+    }))
+    .filter((area) => area.latitude !== null && area.longitude !== null);
+
+  const center =
+    focusSingleItem && validItems.length === 1
+      ? [validItems[0].latitude, validItems[0].longitude]
+      : defaultCenter;
+
   return (
     <MapContainer
-      center={
-        items.length === 1
-          ? [items[0].latitude, items[0].longitude]
-          : [7.8731, 80.7718]
-      }
-      zoom={7}
+      center={center}
+      zoom={focusSingleItem && validItems.length === 1 ? 13 : defaultZoom}
       scrollWheelZoom={false}
       className="map"
     >
@@ -25,12 +54,10 @@ function Map({ items, demandAreas = [] }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {items.map((item) => (
+      {validItems.map((item) => (
         <Pin item={item} key={item.id} />
       ))}
-      {demandAreas
-        .filter((area) => area.latitude != null && area.longitude != null)
-        .map((area) => (
+      {validDemandAreas.map((area) => (
           <CircleMarker
             key={area.key}
             center={[area.latitude, area.longitude]}
