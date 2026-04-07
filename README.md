@@ -85,16 +85,28 @@ Socket server: `http://localhost:4000`
 
 ### Home / Landing
 
-![Home screen](./api/screenshots/SCR-20260407-jrvn.jpeg)
+![Home screen](./api/screenshots/homepage.png)
 
 ### Listings And Map
 
-![Listings with map](./api/screenshots/SCR-20260407-jsqi.png)
+![Listings with map](./api/screenshots/boarding_listing.jpeg)
 
 ### Demand Insights
 
-![Demand heatmap and results](./api/screenshots/SCR-20260407-jsek.png)
+![Demand heatmap and results](./api/screenshots/search.png)
 
-### Search Results
+### Watchlist
 
-![Filtered listings](./api/screenshots/SCR-20260407-jkdw.png)
+![Filtered listings](./api/screenshots/watchlist.png)
+
+### User Dashboard
+
+![User dashboard](./api/screenshots/user_dashboard.png)
+
+### Roommate Finder
+
+![Roommate finder](./api/screenshots/roommate_finder.png)
+
+### Roommate Matches
+
+![Roommate matches](./api/screenshots/roommate_matches.png)
