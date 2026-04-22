@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // 🚨 Added for SPA navigation
+import { useNavigate, useSearchParams } from 'react-router-dom'; // 🚨 Added useSearchParams
 import { Sparkles, MapPin, Users, Home, PlusCircle, LayoutDashboard, Edit2, X, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-function App() {
-  const navigate = useNavigate(); // 🚨 Initialize navigation hook
-  const [activeTab, setActiveTab] = useState('browse'); 
+function BoardingFinder() {
+  const navigate = useNavigate();
+  
+  // 🚨 NEW: Map active tab to the URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'browse';
+
+  // 🚨 NEW: Function to safely update the URL when a tab is clicked
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
+
   const [formData, setFormData] = useState({ title: '', location: '', price: '', genderAllowed: 'Any', features: '', description: '' });
   const [images, setImages] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -20,7 +29,6 @@ function App() {
   const [showWaitlistModal, setShowWaitlistModal] = useState(false);
   const [showAIWarning, setShowAIWarning] = useState(false);
 
-  // --- NEW: Booking & Waitlist Redirection States ---
   const [showRoomSelection, setShowRoomSelection] = useState(false);
   const [selectedBoardingId, setSelectedBoardingId] = useState(null);
   
@@ -30,7 +38,7 @@ function App() {
 
   const fetchListings = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/boardings');
+      const res = await axios.get('http://localhost:8800/api/boardings');
       setMyListings(res.data);
     } catch (err) { console.error(err); }
   };
@@ -43,7 +51,7 @@ function App() {
     if (!formData.features) return alert("Please enter features!");
     setLoadingAI(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/boardings/generate-description', { features: formData.features });
+      const res = await axios.post('http://localhost:8800/api/boardings/generate-description', { features: formData.features });
       setFormData({ ...formData, description: res.data.description });
     } catch (err) { alert("AI Error"); }
     setLoadingAI(false);
@@ -57,7 +65,7 @@ function App() {
     data.append('image', images[0]); 
 
     try {
-      const res = await axios.post('http://localhost:5001/api/boardings/verify-image', data);
+      const res = await axios.post('http://localhost:8800/api/boardings/verify-image', data);
       
       if (res.data.isLegitimate) {
         setIsImageLegit(true);
@@ -98,7 +106,7 @@ function App() {
 
     if (editingId) {
       try {
-        await axios.put(`http://localhost:5001/api/boardings/${editingId}`, data);
+        await axios.put(`http://localhost:8800/api/boardings/${editingId}`, data);
         alert("Listing Updated Successfully!");
         setEditingId(null); 
         setFormData({ title: '', location: '', price: '', genderAllowed: 'Any', features: '', description: '' }); 
@@ -108,7 +116,7 @@ function App() {
     } else {
       data.append('ownerId', '64a7c9f8e4b0a1c2d3e4f5a6'); 
       try {
-        await axios.post('http://localhost:5001/api/boardings/add', data);
+        await axios.post('http://localhost:8800/api/boardings/add', data);
         alert("Boarding Published!");
         setFormData({ title: '', location: '', price: '', genderAllowed: 'Any', features: '', description: '' });
         setImages([]);
@@ -126,14 +134,14 @@ function App() {
 
   const toggleStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'Available' ? 'Full' : 'Available';
-    await axios.patch(`http://localhost:5001/api/boardings/${id}/status`, { status: newStatus });
+    await axios.patch(`http://localhost:8800/api/boardings/${id}/status`, { status: newStatus });
     fetchListings();
   };
 
   const deleteListing = async (id) => {
     if (window.confirm("Are you sure you want to permanently delete this listing?")) {
       try {
-        await axios.delete(`http://localhost:5001/api/boardings/${id}`);
+        await axios.delete(`http://localhost:8800/api/boardings/${id}`);
         alert("Listing deleted successfully.");
         fetchListings(); 
       } catch (err) { alert("Failed to delete."); }
@@ -146,7 +154,6 @@ function App() {
     setActiveTab('dashboard');
   };
 
-  // --- NEW: Improved Custom Waitlist Logic ---
   const joinWaitlist = (boardingId) => {
     setTargetBoardingId(boardingId);
     setShowJoinWaitlistModal(true);
@@ -155,7 +162,7 @@ function App() {
   const handleWaitlistSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:5001/api/boardings/${targetBoardingId}/waitlist`, {
+      await axios.post(`http://localhost:8800/api/boardings/${targetBoardingId}/waitlist`, {
         studentName: waitlistForm.name,
         studentEmail: waitlistForm.email
       });
@@ -169,7 +176,7 @@ function App() {
 
   const viewWaitlist = async (boardingId) => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/boardings/${boardingId}/waitlist`);
+      const res = await axios.get(`http://localhost:8800/api/boardings/${boardingId}/waitlist`);
       setWaitlistData(res.data);
       setShowWaitlistModal(true);
     } catch (err) { alert("Failed to fetch waitlist."); }
@@ -209,7 +216,7 @@ function App() {
                   <div className="h-48 bg-[#F2EBE8] relative border-b border-[#E0E0E0] overflow-hidden">
                     {item.images && item.images.length > 0 ? (
                       <img 
-                        src={`http://localhost:5001/${item.images[0].replace(/\\/g, '/')}`} 
+                        src={`http://localhost:8800/${item.images[0].replace(/\\/g, '/')}`} 
                         alt={item.title} 
                         className="w-full h-full object-cover"
                       />
@@ -250,7 +257,6 @@ function App() {
           </div>
         )}
 
-        {/* ADD / EDIT LISTING PAGE */}
         {activeTab === 'add' && (
           <div className="bg-[#FFFFFF] rounded-3xl shadow-xl border border-[#E0E0E0] animate-in fade-in duration-500">
             <div className="p-6 border-b border-[#E0E0E0] flex justify-between items-center">
@@ -349,7 +355,6 @@ function App() {
           </div>
         )}
 
-        {/* --- MODAL 1: OWNER WAITLIST VIEWER --- */}
         {showWaitlistModal && (
           <div className="fixed inset-0 bg-[#332D2A]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#FFFFFF] rounded-[24px] shadow-2xl p-6 w-full max-w-md animate-in zoom-in-95 duration-200 relative border border-[#E0E0E0]">
@@ -381,7 +386,6 @@ function App() {
           </div>
         )}
 
-        {/* --- MODAL 2: CUSTOM AI WARNING POPUP --- */}
         {showAIWarning && (
           <div className="fixed inset-0 bg-[#332D2A]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-[#FFFFFF] rounded-[24px] shadow-2xl p-[32px] w-full max-w-lg flex flex-col items-center text-center">
@@ -393,7 +397,6 @@ function App() {
           </div>
         )}
 
-        {/* --- MODAL 3: ROOM TYPE SELECTION --- */}
         {showRoomSelection && (
           <div className="fixed inset-0 bg-[#332D2A]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-[#FFFFFF] rounded-[24px] shadow-2xl p-[32px] w-full max-w-md animate-in zoom-in-95 duration-200 border border-[#E0E0E0]">
@@ -431,7 +434,6 @@ function App() {
           </div>
         )}
 
-        {/* --- NEW: MODAL 4: CUSTOM JOIN WAITLIST FORM --- */}
         {showJoinWaitlistModal && (
           <div className="fixed inset-0 bg-[#332D2A]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-[#FFFFFF] rounded-[24px] shadow-2xl p-[32px] w-full max-w-md animate-in zoom-in-95 duration-200 border border-[#E0E0E0]">
@@ -488,4 +490,4 @@ function App() {
   );
 }
 
-export default App;
+export default BoardingFinder;
