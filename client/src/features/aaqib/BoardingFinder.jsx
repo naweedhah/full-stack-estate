@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Sparkles, MapPin, Users, PlusCircle, LayoutDashboard,
-  Edit2, X, ShieldCheck, AlertTriangle,
+  Edit2, X, ShieldCheck, AlertTriangle, TrendingUp,
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { AuthContext } from '../../context/AuthContext';
 import {
   fetchAllBoardings,
@@ -56,6 +57,16 @@ function BoardingFinder() {
     if (activeTab === 'dashboard') fetchListings();
   }, [activeTab]);
 
+  // 🚨 NEW: Transform listings data into chart format
+  const chartData = useMemo(() => {
+    return myListings.map(item => ({
+      name: item.title.substring(0, 15) + (item.title.length > 15 ? '...' : ''),
+      saves: item.savedCount || 0,
+      inquiries: item.inquiryCount || 0,
+      bookings: item.bookingCount || 0,
+    }));
+  }, [myListings]);
+
   const generateAIDescription = async () => {
     if (!formData.features) return showToast('Please enter features first.', 'error');
     setLoadingAI(true);
@@ -101,8 +112,44 @@ function BoardingFinder() {
     setActiveTab('add');
   };
 
+  const validateForm = () => {
+    if (formData.title.trim().length < 5) {
+      showToast('Title must be at least 5 characters long.', 'error');
+      return false;
+    }
+    if (formData.title.trim().length > 60) {
+      showToast('Title is too long (maximum 60 characters).', 'error');
+      return false;
+    }
+    if (formData.location.trim().length < 3) {
+      showToast('Please provide a valid location.', 'error');
+      return false;
+    }
+    if (!formData.price || Number(formData.price) <= 0) {
+      showToast('Monthly price must be greater than Rs. 0.', 'error');
+      return false;
+    }
+    if (!formData.capacity || Number(formData.capacity) < 1 || !Number.isInteger(Number(formData.capacity))) {
+      showToast('Available slots must be a valid whole number (at least 1).', 'error');
+      return false;
+    }
+    const wordCount = formData.description.trim().split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount < 10) {
+      showToast('Description must be at least 10 words to give students enough details.', 'error');
+      return false;
+    }
+    if (!editingId && images.length === 0) {
+      showToast('Please upload at least one room photo.', 'error');
+      return false;
+    }
+    return true; 
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     const data = new FormData();
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
     images.forEach(img => data.append('images', img));
@@ -115,9 +162,20 @@ function BoardingFinder() {
         setFormData(EMPTY_FORM);
         setImages([]);
         setActiveTab('dashboard');
-      } catch { showToast('Failed to update listing.', 'error'); }
+      } catch (err) { 
+        const errorMsg = err.response?.data?.errors?.[0] || 'Failed to update listing.';
+        showToast(errorMsg, 'error'); 
+      }
     } else {
-      data.append('ownerId', currentUser?._id);
+      // 🚨 NEW: Ensure we actually have an ID before submitting!
+      const userId = currentUser?.id || currentUser?._id;
+      
+      if (!userId) {
+        return showToast('You must be logged in to publish a listing!', 'error');
+      }
+
+      data.append('ownerId', userId);
+      
       try {
         await createBoarding(data);
         showToast('Boarding published!');
@@ -126,7 +184,10 @@ function BoardingFinder() {
         setIsImageLegit(null);
         setAiTags([]);
         setActiveTab('dashboard');
-      } catch { showToast('Failed to publish listing.', 'error'); }
+      } catch (err) { 
+        const errorMsg = err.response?.data?.errors?.[0] || 'Failed to publish listing.';
+        showToast(errorMsg, 'error'); 
+      }
     }
   };
 
@@ -249,42 +310,72 @@ function BoardingFinder() {
         </div>
 
         {activeTab === 'dashboard' && (
-          <div className="bf-dash-grid">
-            {myListings.length === 0 ? (
-              <div className="bf-empty">
-                <p>No listings yet. Add your first boarding to get started.</p>
-                <button className="btn-primary" onClick={() => setActiveTab('add')}>
-                  <PlusCircle size={14} /> Add Listing
-                </button>
+          <div className="bf-dash-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            
+            {/* 🚨 NEW: Analytics Chart Section */}
+            {myListings.length > 0 && (
+              <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '24px', border: '1px solid #E0E0E0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#332D2A', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <TrendingUp color="#008080" size={20} /> Performance Overview
+                </h3>
+                <div style={{ height: '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="name" stroke="#7E736D" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#7E736D" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <Tooltip 
+                        cursor={{ fill: '#F2EBE8' }} 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', color: '#332D2A', fontWeight: 'bold' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }}/>
+                      <Bar dataKey="saves" name="Watchlist Saves" fill="#BED9D8" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Bar dataKey="inquiries" name="Messages" fill="#FECE51" radius={[4, 4, 0, 0]} barSize={30} />
+                      <Bar dataKey="bookings" name="Booking Requests" fill="#008080" radius={[4, 4, 0, 0]} barSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            ) : myListings.map(item => (
-              <div key={item._id} className="bf-dash-card">
-                <div className="bf-dash-card-top">
-                  <div className="bf-dash-card-info">
-                    <h3>{item.title}</h3>
-                    <p><MapPin size={11} /> {item.location}</p>
-                    <p><Users size={11} /> {item.capacity ?? '—'} slot{item.capacity !== 1 ? 's' : ''}</p>
+            )}
+
+            {/* Existing Listings Grid */}
+            <div className="bf-dash-grid">
+              {myListings.length === 0 ? (
+                <div className="bf-empty">
+                  <p>No listings yet. Add your first boarding to get started.</p>
+                  <button className="btn-primary" onClick={() => setActiveTab('add')}>
+                    <PlusCircle size={14} /> Add Listing
+                  </button>
+                </div>
+              ) : myListings.map(item => (
+                <div key={item._id} className="bf-dash-card">
+                  <div className="bf-dash-card-top">
+                    <div className="bf-dash-card-info">
+                      <h3>{item.title}</h3>
+                      <p><MapPin size={11} /> {item.location}</p>
+                      <p><Users size={11} /> {item.capacity ?? '—'} slot{item.capacity !== 1 ? 's' : ''}</p>
+                    </div>
+                    <span className={`bf-badge ${item.status?.toLowerCase() || 'available'}`}>{item.status || 'Available'}</span>
                   </div>
-                  <span className={`bf-badge ${item.status.toLowerCase()}`}>{item.status}</span>
+                  <div className="bf-dash-card-actions">
+                    <button className="btn-secondary" onClick={() => toggleStatus(item._id, item.status)}>
+                      Mark {item.status === 'Available' ? 'Full' : 'Available'}
+                    </button>
+                    <button className="btn-secondary" onClick={() => handleEditClick(item)}>
+                      <Edit2 size={13} /> Edit
+                    </button>
+                    <button className="btn-danger" onClick={() => confirmDelete(item._id)}>
+                      <X size={13} /> Delete
+                    </button>
+                  </div>
+                  {item.status === 'Full' && (
+                    <button className="btn-primary full" onClick={() => viewWaitlist(item._id)}>
+                      <Users size={14} /> View Waitlist
+                    </button>
+                  )}
                 </div>
-                <div className="bf-dash-card-actions">
-                  <button className="btn-secondary" onClick={() => toggleStatus(item._id, item.status)}>
-                    Mark {item.status === 'Available' ? 'Full' : 'Available'}
-                  </button>
-                  <button className="btn-secondary" onClick={() => handleEditClick(item)}>
-                    <Edit2 size={13} /> Edit
-                  </button>
-                  <button className="btn-danger" onClick={() => confirmDelete(item._id)}>
-                    <X size={13} /> Delete
-                  </button>
-                </div>
-                {item.status === 'Full' && (
-                  <button className="btn-primary full" onClick={() => viewWaitlist(item._id)}>
-                    <Users size={14} /> View Waitlist
-                  </button>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+
           </div>
         )}
 

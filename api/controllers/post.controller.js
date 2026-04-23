@@ -447,11 +447,65 @@ export const getPost = async (req, res) => {
   }
 };
 
+// --- NEW: Backend Gatekeeper Validation ---
+const validatePostPayload = (postData, postDetail, isUpdate = false) => {
+  const errors = [];
+
+  // 1. Title Rules
+  if (!isUpdate || postData?.title !== undefined) {
+    const title = postData?.title || "";
+    if (title.trim().length < 5 || title.trim().length > 60) {
+      errors.push("Title must be between 5 and 60 characters.");
+    }
+  }
+
+  // 2. Location Rules (Checking city/area)
+  if (!isUpdate || postData?.city !== undefined || postData?.area !== undefined) {
+    const location = postData?.city || postData?.area || "";
+    if (location.trim().length < 3) {
+      errors.push("Location must be at least 3 characters long.");
+    }
+  }
+
+  // 3. Price (Rent) Rules
+  if (!isUpdate || postData?.rent !== undefined) {
+    const rent = Number(postData?.rent);
+    if (isNaN(rent) || rent <= 0) {
+      errors.push("Monthly price (rent) must be greater than Rs. 0.");
+    }
+  }
+
+  // 4. Capacity (Slots) Rules
+  if (!isUpdate || postData?.capacity !== undefined) {
+    const capacity = Number(postData?.capacity);
+    if (isNaN(capacity) || capacity < 1 || !Number.isInteger(capacity)) {
+      errors.push("Available slots (capacity) must be a valid whole number of at least 1.");
+    }
+  }
+
+  // 5. Description Rules
+  if (!isUpdate || postDetail?.desc !== undefined) {
+    const desc = postDetail?.desc || "";
+    const wordCount = desc.trim().split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount < 10) {
+      errors.push("Description must be at least 10 words.");
+    }
+  }
+
+  return errors;
+};
+
 export const addPost = async (req, res) => {
   const body = req.body;
   const tokenUserId = req.userId;
 
   try {
+    // 🚨 RUN VALIDATION FIRST
+    const validationErrors = validatePostPayload(body.postData, body.postDetail, false);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ message: "Validation failed", errors: validationErrors });
+    }
+
     const newPost = await prisma.post.create({
       data: {
         ...body.postData,
@@ -484,6 +538,12 @@ export const updatePost = async (req, res) => {
   const body = req.body;
 
   try {
+    // 🚨 RUN VALIDATION FIRST
+    const validationErrors = validatePostPayload(body.postData, body.postDetail, true);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ message: "Validation failed", errors: validationErrors });
+    }
+
     const existingPost = await prisma.post.findUnique({
       where: { id },
       include: {
