@@ -24,11 +24,14 @@ export const profilePageLoader = async () => {
     .catch(() => ({ data: [] }));
   const preferencePromise = apiRequest("/users/notifications/preferences")
     .catch(() => ({ data: null }));
+  const bookingPromise = apiRequest("/bookings")
+    .catch(() => ({ data: [] }));
   return defer({
     postResponse: postPromise,
     chatResponse: chatPromise,
     searchAlertResponse: searchAlertPromise,
     preferenceResponse: preferencePromise,
+    bookingResponse: bookingPromise,
   });
 };
 

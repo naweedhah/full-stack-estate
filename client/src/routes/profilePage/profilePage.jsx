@@ -23,6 +23,7 @@ function StudentDashboard({
   unreadCount,
   notifications,
   initialChatId,
+  allBookings,
 }) {
   const [chatCollapsed, setChatCollapsed] = useState(!initialChatId);
   const [searchAlerts, setSearchAlerts] = useState(initialSearchAlerts || []);
@@ -31,8 +32,9 @@ function StudentDashboard({
   const [preferenceError, setPreferenceError] = useState("");
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
-  const pendingRequests = 0;
-  const confirmedBookings = 0;
+  const pendingRequests = allBookings.filter((b) => b.status === "pending").length;
+  const approvedBookings = allBookings.filter((b) => b.status === "approved").length;
+  const confirmedBookings = allBookings.filter((b) => b.status === "confirmed").length;
   const roommateMatches = 0;
   const watchlistItems = savedPosts.slice(0, 2);
   const preferences = useNotificationStore((state) => state.preferences);
@@ -223,18 +225,34 @@ function StudentDashboard({
                   <span>Pending</span>
                 </div>
                 <div>
-                  <strong>0</strong>
+                  <strong>{approvedBookings}</strong>
                   <span>Approved</span>
                 </div>
                 <div>
-                  <strong>0</strong>
+                  <strong>{allBookings.filter((b) => b.status === "paymentPending").length}</strong>
                   <span>Payment Due</span>
                 </div>
               </div>
-              <p className="emptyText">
-                Once you request a boarding, the owner’s decision and payment
-                step will show up here.
-              </p>
+              {allBookings.length > 0 ? (
+                <div className="stackList">
+                  {allBookings.slice(0, 4).map((b) => (
+                    <div className="infoRow" key={b.id}>
+                      <strong>{b.post?.title || "Listing"}</strong>
+                      <span>
+                        {b.post?.city}{b.post?.area ? `, ${b.post.area}` : ""} &bull;{" "}
+                        <span style={{ textTransform: "capitalize" }}>
+                          {b.status === "paymentPending" ? "Payment pending" : b.status}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="emptyText">
+                  Once you request a boarding, the owner&#39;s decision and payment
+                  step will show up here.
+                </p>
+              )}
             </article>
 
             <article className="panel" id="notifications">
@@ -500,6 +518,7 @@ function ProfilePage() {
           data.chatResponse,
           data.searchAlertResponse,
           data.preferenceResponse,
+          data.bookingResponse,
         ])}
         errorElement={<p>Error loading dashboard!</p>}
       >
@@ -508,6 +527,7 @@ function ProfilePage() {
           chatResponse,
           searchAlertResponse,
           preferenceResponse,
+          bookingResponse,
         ]) => (
           <StudentDashboard
             currentUser={currentUser}
@@ -519,6 +539,7 @@ function ProfilePage() {
             notifications={notifications}
             initialChatId={initialChatId}
             onLogout={handleLogout}
+            allBookings={bookingResponse.data || []}
           />
         )}
       </Await>

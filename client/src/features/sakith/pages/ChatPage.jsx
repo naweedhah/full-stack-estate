@@ -79,14 +79,21 @@ export default function ChatPage() {
             ) : messages.length === 0 ? (
               <p className="text-muted">No messages yet. Send the first one below.</p>
             ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className="message">
-                  <p>{msg.text}</p>
-                  <span className="text-muted">{format(msg.createdAt)}</span>
-                  <ScamWarning text={msg.text} scamFlag={msg.scamFlag} />
-                  {!isAdminViewer && <ReportButton messageId={msg.id} />}
-                </div>
-              ))
+              messages.map((msg) => {
+                const isMine = msg.userId === currentUser?.id;
+                return (
+                  <div key={msg.id} className={`message-row ${isMine ? "mine" : "theirs"}`}>
+                    <div className={`message-bubble ${isMine ? "mine" : "theirs"}`}>
+                      <p>{msg.text}</p>
+                      <div className="message-meta">
+                        <span className="text-muted">{format(msg.createdAt)}</span>
+                        <ScamWarning text={msg.text} scamFlag={msg.scamFlag} />
+                        {!isAdminViewer && <ReportButton messageId={msg.id} />}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
 

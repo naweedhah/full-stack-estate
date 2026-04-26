@@ -127,6 +127,194 @@
           color: #555;
           line-height: 20px;
         }
+
+        .reviewsSection {
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 1px solid #eee;
+
+          .reviewsHeader {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+
+            h3 { font-size: 18px; font-weight: 700; margin: 0; }
+
+            .avgRating {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+
+              .stars { color: #fece51; font-size: 16px; letter-spacing: 2px; }
+              strong { font-size: 16px; }
+              .reviewCount { font-size: 13px; color: #888; }
+            }
+          }
+
+          .reviewForm {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            .reviewFormLabel { font-size: 13px; font-weight: 600; color: #444; margin: 0; }
+
+            .starPicker {
+              display: flex;
+              gap: 4px;
+
+              .starBtn {
+                background: none;
+                border: none;
+                font-size: 28px;
+                cursor: pointer;
+                color: #ddd;
+                padding: 0;
+                transition: color 0.15s;
+
+                &.filled { color: #fece51; }
+                &:hover { color: #fece51; }
+              }
+            }
+
+            textarea {
+              padding: 9px 12px;
+              border: 1.5px solid #e0e0e0;
+              border-radius: 7px;
+              font-size: 14px;
+              outline: none;
+              resize: vertical;
+
+              &:focus { border-color: #fece51; }
+            }
+
+            .reviewSuccess { font-size: 13px; color: #155724; margin: 0; }
+            .reviewError   { font-size: 13px; color: #c1121f; margin: 0; }
+
+            .submitReviewBtn {
+              align-self: flex-start;
+              background: #fece51;
+              color: #222;
+              border: none;
+              border-radius: 8px;
+              padding: 10px 20px;
+              font-size: 14px;
+              font-weight: 600;
+              cursor: pointer;
+
+              &:disabled { opacity: 0.6; cursor: not-allowed; }
+              &:hover:not(:disabled) { background: #f5c200; }
+            }
+          }
+
+          .noReviews { font-size: 14px; color: #aaa; }
+
+          .reviewList {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+
+            .reviewCard {
+              padding: 14px;
+              border: 1px solid #eee;
+              border-radius: 10px;
+              background: white;
+
+              .reviewCardTop {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 8px;
+
+                img {
+                  width: 36px;
+                  height: 36px;
+                  border-radius: 50%;
+                  object-fit: cover;
+                }
+
+                div {
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
+
+                  strong { font-size: 14px; }
+                  .reviewStars { color: #fece51; font-size: 13px; letter-spacing: 1px; }
+                }
+
+                .reviewDate { font-size: 11px; color: #aaa; white-space: nowrap; }
+              }
+
+              .reviewComment { font-size: 14px; color: #555; line-height: 1.5; margin: 0; }
+            }
+          }
+        }
+
+        .actions {
+          margin-top: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+
+          .buttons {
+            display: flex;
+            justify-content: space-between;
+
+            @include sm {
+              flex-direction: column;
+              gap: 12px;
+            }
+
+            button {
+              padding: 20px;
+              display: flex;
+              align-items: center;
+              gap: 5px;
+              background-color: white;
+              border: 1px solid #fece51;
+              border-radius: 5px;
+              cursor: pointer;
+
+              &.disabledAction {
+                opacity: 0.65;
+                cursor: not-allowed;
+              }
+
+              img {
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+
+          .bookingError {
+            color: #c1121f;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+
+          .chatOwnerBtn {
+            border-color: #5ba4cf !important;
+            color: #0c5460;
+          }
+
+          .approvedNotice {
+            font-size: 14px;
+            color: #155724;
+            background: #d4edda;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 3px solid #28a745;
+            line-height: 1.5;
+          }
+        }
       }
     }
   }
@@ -255,42 +443,6 @@
         }
       }
 
-      .buttons {
-        display: flex;
-        justify-content: space-between;
-
-        @include sm {
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        button {
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          background-color: white;
-          border: 1px solid #fece51;
-          border-radius: 5px;
-          cursor: pointer;
-
-          &.disabledAction {
-            opacity: 0.65;
-            cursor: not-allowed;
-          }
-
-          img {
-            width: 16px;
-            height: 16px;
-          }
-        }
-      }
-
-      .bookingError {
-        color: #c1121f;
-        font-size: 14px;
-        line-height: 1.5;
-      }
     }
   }
 }

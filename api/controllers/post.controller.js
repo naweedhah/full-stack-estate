@@ -620,6 +620,7 @@ export const deletePost = async (req, res) => {
 export const createBookingRequest = async (req, res) => {
   const postId = req.params.id;
   const tokenUserId = req.userId;
+  const { applicantName, applicantPhone, applicantAddress, applicantNIC } = req.body;
 
   try {
     const [user, post] = await Promise.all([
@@ -705,6 +706,10 @@ export const createBookingRequest = async (req, res) => {
         ownerId: post.ownerId,
         postId,
         status: "pending",
+        applicantName: applicantName || null,
+        applicantPhone: applicantPhone || null,
+        applicantAddress: applicantAddress || null,
+        applicantNIC: applicantNIC || null,
       },
     });
 

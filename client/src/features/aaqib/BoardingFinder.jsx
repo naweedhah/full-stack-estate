@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Sparkles, MapPin, Users, PlusCircle, LayoutDashboard,
   Edit2, X, ShieldCheck, AlertTriangle, TrendingUp,
@@ -16,13 +16,15 @@ import {
   deleteBoarding as deleteBoardingAPI,
   getWaitlist,
 } from './services/boardingService';
+import apiRequest from '../../lib/apiRequest';
 import './boardingFinder.scss';
 
 const EMPTY_FORM = { title: '', location: '', price: '', capacity: '', genderAllowed: 'Any', features: '', description: '' };
 const stripHtml = (html) => html?.replace(/<[^>]*>/g, '') || '';
 
 function BoardingFinder() {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, updateUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
   const setActiveTab = (tab) => setSearchParams({ tab });
@@ -214,6 +216,14 @@ function BoardingFinder() {
     setActiveTab('dashboard');
   };
 
+  const handleLogout = async () => {
+    try {
+      await apiRequest.post('/auth/logout');
+    } catch (_) {}
+    updateUser(null);
+    navigate('/');
+  };
+
   const viewWaitlist = async (boardingId) => {
     try {
       const res = await getWaitlist(boardingId);
@@ -306,6 +316,12 @@ function BoardingFinder() {
             onClick={() => { setActiveTab('add'); setEditingId(null); setFormData(EMPTY_FORM); }}
           >
             <PlusCircle size={15} /> Add Listing
+          </button>
+          <Link to="/bookings" className="bf-bookings-link">
+            Manage Bookings
+          </Link>
+          <button className="bf-logout-btn" onClick={handleLogout}>
+            Logout
           </button>
         </div>
 

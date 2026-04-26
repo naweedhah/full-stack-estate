@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "user",
+          "value": "{\"id\":\"user-test-001\",\"username\":\"teststudent\",\"fullName\":\"Test Student\",\"email\":\"test@university.lk\",\"role\":\"student\",\"gender\":\"male\",\"isVerified\":true,\"avatar\":null,\"phone\":null}"
+        }
+      ]
+    }
+  ]
+}

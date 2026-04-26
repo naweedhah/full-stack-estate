@@ -1,0 +1,346 @@
+@import "../../../responsive.scss";
+
+.bookingManagementPage {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+
+  @include md {
+    padding: 20px 16px 40px;
+  }
+
+  .pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    gap: 16px;
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f87c47;
+      margin: 0 0 6px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .subtext {
+      font-size: 14px;
+      color: #777;
+      margin: 0;
+    }
+
+    .backLink {
+      font-size: 14px;
+      color: #555;
+      text-decoration: none;
+      white-space: nowrap;
+      padding: 8px 0;
+
+      &:hover { color: #222; }
+    }
+  }
+
+  .statsRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+
+    .statChip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 12px 18px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.18s;
+      min-width: 80px;
+
+      strong {
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      span {
+        font-size: 11px;
+        color: #777;
+        white-space: nowrap;
+      }
+
+      &:hover {
+        border-color: #f87c47;
+      }
+
+      &.active {
+        border-color: #f87c47;
+        background: #fff5f0;
+
+        strong { color: #f87c47; }
+        span { color: #f87c47; }
+      }
+    }
+  }
+
+  .loadingText {
+    color: #999;
+    font-size: 14px;
+    padding: 40px 0;
+    text-align: center;
+  }
+
+  .emptyState {
+    padding: 48px 24px;
+    text-align: center;
+    border: 1.5px dashed #e0e0e0;
+    border-radius: 12px;
+    color: #999;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .bookingsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.bookingCard {
+  border: 1.5px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+  transition: box-shadow 0.18s;
+
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  }
+
+  &.status-confirmed {
+    border-color: #bde8c9;
+    background: #f6fff9;
+  }
+
+  &.status-cancelled,
+  &.status-rejected,
+  &.status-expired {
+    opacity: 0.65;
+  }
+
+  .bookingCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+
+    .bookingCardMain {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .postTitle {
+        font-size: 16px;
+        font-weight: 600;
+        color: #222;
+        text-decoration: none;
+
+        &:hover { color: #f87c47; }
+      }
+
+      .postMeta {
+        font-size: 13px;
+        color: #888;
+      }
+    }
+
+    .statusBadge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+
+      &.pending       { background: #fff3cd; color: #856404; }
+      &.approved      { background: #d1ecf1; color: #0c5460; }
+      &.paymentPending { background: #fde2d0; color: #7a3a10; }
+      &.confirmed     { background: #d4edda; color: #155724; }
+      &.rejected,
+      &.cancelled,
+      &.expired       { background: #f8d7da; color: #721c24; }
+    }
+  }
+
+  .studentInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 8px;
+
+    img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong { font-size: 14px; color: #222; }
+      span   { font-size: 12px; color: #888; }
+
+      .requestedAt { font-size: 11px; color: #aaa; }
+    }
+  }
+
+  .paymentInfo {
+    margin-bottom: 14px;
+    padding: 12px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    border-left: 3px solid #5ba4cf;
+
+    strong {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #5ba4cf;
+      margin-bottom: 8px;
+    }
+
+    .paymentGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+
+      span {
+        font-size: 13px;
+        color: #444;
+      }
+
+      .paymentStatus {
+        font-weight: 600;
+
+        &.submitted { color: #856404; }
+        &.verified  { color: #155724; }
+        &.rejected  { color: #721c24; }
+      }
+    }
+  }
+
+  .applicantDetails {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: #fffbf0;
+    border-radius: 8px;
+    border-left: 3px solid #fece51;
+
+    .applicantDetailsTitle {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #a07d00;
+      margin: 0 0 10px;
+    }
+
+    .applicantGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+
+      @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+      }
+
+      .applicantField {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        &.wide {
+          grid-column: 1 / -1;
+        }
+
+        .fieldLabel {
+          font-size: 11px;
+          color: #888;
+          font-weight: 600;
+        }
+
+        .fieldValue {
+          font-size: 13px;
+          color: #222;
+        }
+      }
+    }
+  }
+
+  .bookingActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .actionBtn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      &.approve {
+        background: #28a745;
+        color: white;
+        &:hover:not(:disabled) { background: #218838; }
+      }
+
+      &.reject {
+        background: #dc3545;
+        color: white;
+        &:hover:not(:disabled) { background: #c82333; }
+      }
+
+      &.chat {
+        background: white;
+        color: #0c5460;
+        border: 1.5px solid #5ba4cf;
+        &:hover:not(:disabled) { background: #f0f7ff; }
+      }
+
+      &.cancel {
+        background: white;
+        color: #888;
+        border: 1.5px solid #ddd;
+        &:hover:not(:disabled) { border-color: #dc3545; color: #dc3545; }
+      }
+    }
+  }
+
+  .cardError {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #dc3545;
+  }
+}

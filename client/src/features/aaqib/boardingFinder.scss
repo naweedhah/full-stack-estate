@@ -44,6 +44,45 @@
       border-bottom-color: #221d1c;
     }
   }
+
+  .bf-logout-btn {
+    margin-left: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    background: none;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s;
+    align-self: center;
+
+    &:hover {
+      border-color: #e63946;
+      color: #e63946;
+    }
+  }
+
+  .bf-bookings-link {
+    margin-left: auto;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #008080;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      color: #006666;
+      border-bottom-color: #008080;
+    }
+  }
 }
 
 // ── Status badge (shared) ────────────────────────────────────────────────────

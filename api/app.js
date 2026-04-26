@@ -12,6 +12,8 @@ import messageRoute from "./src/features/messages/message.route.js";
 import inquiryRoute from "./src/features/inquiry/inquiry.route.js";
 import reportRoute from "./src/features/report/report.route.js";
 import sakithChatRoute from "./src/features/sakithChat/sakithChat.route.js";
+import bookingRoute from "./src/features/booking/booking.route.js";
+import reviewRoute from "./src/features/review/review.route.js";
 import { initSocketServer } from "./src/shared/lib/socket.js";
 import boardingRoutes from './routes/boardingRoutes.js';
 
@@ -34,6 +36,8 @@ app.use("/api/inquiry", inquiryRoute);
 app.use("/api/report", reportRoute);
 app.use("/api/sakith-chat", sakithChatRoute);
 app.use('/api/boardings', boardingRoutes);
+app.use('/api/bookings', bookingRoute);
+app.use('/api/posts/:postId/reviews', reviewRoute);
 
 initSocketServer(server, process.env.CLIENT_URL);
 

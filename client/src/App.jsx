@@ -21,8 +21,8 @@ import InquiryBox from "./features/sakith/components/InquiryBox";
 import AdminDashboard from "./features/sakith/pages/AdminDashboard";
 import ChatPage from "./features/sakith/pages/ChatPage";
 
-// 🚨 Your new import added here!
 import BoardingFinder from "./features/aaqib/BoardingFinder";
+import BookingManagementPage from "./features/booking/pages/BookingManagementPage";
 
 function App() {
   const router = createBrowserRouter([
@@ -93,10 +93,13 @@ function App() {
           path: "/sakith/chat/:chatId",
           element: <ChatPage />
         },
-        // 🚨 Your new route added here!
         {
           path: "/boardings",
           element: <BoardingFinder />
+        },
+        {
+          path: "/bookings",
+          element: <BookingManagementPage />
         }
       ],
     },

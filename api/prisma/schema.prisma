@@ -109,6 +109,20 @@ enum ComplaintTargetType {
   booking
 }
 
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String   @db.ObjectId
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, postId])
+}
+
 model Post {
   id                    String                @id @default(auto()) @map("_id") @db.ObjectId
   title                 String
@@ -131,6 +145,7 @@ model Post {
   postDetail            PostDetail?
   savedPosts            SavedPost[]
   bookingRequests       BookingRequest[]
+  reviews               Review[]
   watchlists            Watchlist[]
   reports               Report[]
   inquiries             Inquiry[]
@@ -177,6 +192,10 @@ model BookingRequest {
   post            Post                 @relation(fields: [postId], references: [id])
   postId          String               @db.ObjectId
   status          BookingRequestStatus @default(pending)
+  applicantName   String?
+  applicantPhone  String?
+  applicantAddress String?
+  applicantNIC    String?
   message         String?
   requestedMoveIn DateTime?
   approvedAt      DateTime?
@@ -364,6 +383,7 @@ model User {
   savedPosts                SavedPost[]
   bookingRequests           BookingRequest[]        @relation("StudentBookingRequests")
   receivedBookingRequests   BookingRequest[]        @relation("OwnerBookingRequests")
+  reviews                   Review[]
   watchlists                Watchlist[]
   notifications             Notification[]
   notificationPreference    NotificationPreference?
